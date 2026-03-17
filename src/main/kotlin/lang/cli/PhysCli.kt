@@ -18,7 +18,7 @@ class PhysCli {
             if (input.equals("exit", true)) break
 
             val tokens = Lexer(input).lex()
-            println(tokens)
+//            println(tokens)
 
             val parser = Parser(tokens)
             val parser2 = Parser(tokens)

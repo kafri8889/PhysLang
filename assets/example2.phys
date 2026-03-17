@@ -1,0 +1,19 @@
+
+unit frame = 0.016 s
+unit pixel = 0.001 m
+
+var enemyMass = 85.5 kg
+var baseSpeed = 200 pixel / frame
+
+baseSpeed += 50 pixel / frame
+
+// Energi Kinetik (E = 1/2 * m * v^2)
+var kineticEnergy = 0.5 * enemyMass * baseSpeed * baseSpeed
+
+// Gaya Hantam (F = m * a)
+var impactForce = enemyMass * (baseSpeed / (10 frame))
+
+print "Kecepatan Final    : " + baseSpeed
+print "Energi Tabrakan    : " + kineticEnergy
+print "Gaya Hantam        : " + impactForce
+print "Vektor Tolakan     : " + -impactForce

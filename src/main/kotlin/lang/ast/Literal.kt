@@ -4,6 +4,8 @@ sealed interface LiteralValue {
 
     data class IntVal(val value: Int) : LiteralValue
 
+    data class DoubleVal(val value: Double) : LiteralValue
+
     data class StringVal(val value: String) : LiteralValue
 
     data class BoolVal(val value: Boolean) : LiteralValue

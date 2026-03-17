@@ -13,6 +13,10 @@ class PhysRunner() {
         execute(source)
     }
 
+    fun runScript(script: String) {
+        execute(script)
+    }
+
     private fun execute(source: String) {
         try {
             val tokens = Lexer(source).lex()

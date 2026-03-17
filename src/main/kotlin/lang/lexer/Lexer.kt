@@ -23,14 +23,18 @@ class Lexer(private val source: String) {
         return source.getOrNull(currentGlobalPosition + n)
     }
 
-    fun parseNumber(): String {
-        var number = ""
-
-        do {
-            number += advance()
-        } while (peek()?.isDigit() == true)
-
-        return number
+    private fun parseNumber(): String {
+        var numberString = ""
+        while (peek()?.isDigit() == true) {
+            numberString += advance()
+        }
+        if (peek() == '.' && lookahead(1)?.isDigit() == true) {
+            numberString += advance()
+            while (peek()?.isDigit() == true) {
+                numberString += advance()
+            }
+        }
+        return numberString
     }
 
     fun parseIdentifier(): Pair<String, TokenType> {
@@ -55,6 +59,19 @@ class Lexer(private val source: String) {
         }
 
         advance() // consume '"'
+
+        return content
+    }
+
+    fun parseComment(): String {
+        var content = ""
+
+        advance() // consume '/'
+        advance() // consume '/'
+
+        while (peek() != '\n' && peek() != '\u0000' && peek() != null) {
+            content += advance()
+        }
 
         return content
     }
@@ -127,6 +144,9 @@ class Lexer(private val source: String) {
 
                         advance()
                         advance()
+                    } else if (lookahead(1) == '/') {
+                        tokenType = TokenType.Comment
+                        value = parseComment()
                     } else {
                         tokenType = TokenType.Divide
                         value = advance().toString()

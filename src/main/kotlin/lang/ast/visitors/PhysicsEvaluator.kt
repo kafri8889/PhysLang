@@ -1,7 +1,6 @@
 package lang.ast.visitors
 
 import lang.ast.*
-import lang.ast.PhysicsValue.Companion.emptyDimensions
 import lang.core.Environment
 import lang.lexer.TokenType
 
@@ -106,12 +105,16 @@ class PhysicsEvaluator(
     }
 
     override fun visitLiteralExpr(literal: LiteralExpr): RuntimeValue {
+        val value = when (val literal = literal.value) {
+            is LiteralValue.IntVal -> literal.value.toDouble()
+            is LiteralValue.DoubleVal -> literal.value
+            else -> throw Exception("Invalid literal: $literal")
+        }
+
         return PhysicsValue(
-            dimensions = emptyDimensions,
-            value = when (val literalValue = literal.value) {
-                is LiteralValue.IntVal -> literalValue.value.toDouble()
-                else -> 0.0
-            }
+            value = value,
+            dimensions = IntArray(7),
+            scale = 1.0
         )
     }
 
@@ -146,10 +149,29 @@ class PhysicsEvaluator(
 
     override fun visitVariableExpr(expr: VariableExpr): RuntimeValue {
         val value = environment.getVar(expr.name)
+        if (value != null) return value
 
-        if (value == null) throw Exception("Variable ${expr.name} not found!")
+        val customUnit = environment.getUnit(expr.name)
+        if (customUnit is PhysicsValue) {
+            return PhysicsValue(
+                value = 1.0,
+                dimensions = customUnit.dimensions,
+                scale = customUnit.value * customUnit.scale,
+                unitName = expr.name
+            )
+        }
 
-        return value
+        val builtinUnit = PhysicsValue.unitRegistry[expr.name]
+        if (builtinUnit != null) {
+            return PhysicsValue(
+                value = 1.0,
+                dimensions = builtinUnit.dimensions,
+                scale = builtinUnit.scale,
+                unitName = expr.name
+            )
+        }
+
+        throw Exception("Variable or unit '${expr.name}' is not defined!")
     }
 
     override fun visitAssignExpr(expr: AssignExpr): RuntimeValue {

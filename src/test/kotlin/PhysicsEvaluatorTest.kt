@@ -1,6 +1,6 @@
 
+import lang.ast.PhysicsValue
 import lang.ast.visitors.PhysicsEvaluator
-import lang.core.PhysicsValue
 import lang.lexer.Lexer
 import lang.parser.Parser
 import org.junit.jupiter.api.Assertions.*
@@ -16,7 +16,7 @@ class PhysicsEvaluatorTest {
         val ast = parser.parseExpression() ?: throw Exception("Parser return null!")
 
         val evaluator = PhysicsEvaluator()
-        return ast.accept(evaluator)
+        return ast.accept(evaluator) as PhysicsValue
     }
 
     @Test

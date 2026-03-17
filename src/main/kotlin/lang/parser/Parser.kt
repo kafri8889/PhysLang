@@ -27,12 +27,18 @@ class Parser(
                     val unit = advance()!!.value
 
                     QuantityExpr(
-                        value = LiteralExpr(LiteralValue.IntVal(token.value.toInt())),
+                        value = LiteralExpr(
+                            value = if (token.value.contains('.')) LiteralValue.DoubleVal(token.value.toDouble())
+                            else LiteralValue.IntVal(token.value.toInt())
+                        ),
                         unit = UnitNode.BaseUnit(unit)
                     )
                 } else {
                     // Throw exception?
-                    LiteralExpr(LiteralValue.IntVal(token.value.toInt()))
+                    LiteralExpr(
+                        value = if (token.value.contains('.')) LiteralValue.DoubleVal(token.value.toDouble())
+                        else LiteralValue.IntVal(token.value.toInt())
+                    )
                 }
             }
             TokenType.Minus -> {

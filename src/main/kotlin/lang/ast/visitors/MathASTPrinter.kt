@@ -34,6 +34,7 @@ class MathASTPrinter : ExprVisitor<String> {
     override fun visitLiteralExpr(literal: LiteralExpr): String {
         return when (val value = literal.value) {
             is LiteralValue.IntVal -> value.value.toString()
+            is LiteralValue.DoubleVal -> value.value.toString()
             is LiteralValue.BoolVal -> value.value.toString()
             is LiteralValue.StringVal -> value.value
         }

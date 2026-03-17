@@ -51,6 +51,9 @@ class Parser(
             TokenType.Identifier -> {
                 VariableExpr(token.value)
             }
+            TokenType.StringLiteral -> {
+                StringLiteralExpr(token.value)
+            }
             else -> null
         }
     }
@@ -63,6 +66,29 @@ class Parser(
                     if (right == null) return null
 
                     AssignExpr(left.name, right)
+                } else throw IllegalStateException("Unexpected token type ${token.tokenType}")
+            }
+            TokenType.PlusAssign,
+            TokenType.MinusAssign,
+            TokenType.MultiplyAssign,
+            TokenType.DivideAssign -> {
+                if (left is VariableExpr) {
+                    val right = parseExpression(Precedence.fromToken(token.tokenType))
+                    if (right == null) return null
+
+                    val binaryExpr = BinaryExpr(
+                        left = left,
+                        operator = when (token.tokenType) {
+                            TokenType.PlusAssign -> TokenType.Plus
+                            TokenType.MinusAssign -> TokenType.Minus
+                            TokenType.MultiplyAssign -> TokenType.Multiply
+                            TokenType.DivideAssign -> TokenType.Divide
+                            else -> throw IllegalStateException("Unexpected token type ${token.tokenType}")
+                        },
+                        right = right
+                    )
+
+                    AssignExpr(left.name, binaryExpr)
                 } else throw IllegalStateException("Unexpected token type ${token.tokenType}")
             }
 
@@ -97,9 +123,9 @@ class Parser(
         val token = peek()
 
         return when (token?.tokenType) {
-
             TokenType.Var -> parseVarDecl()
-
+            TokenType.Print -> parsePrintStmt()
+            TokenType.Unit -> parseUnitDecl()
             else -> parseExprStmt()
         }
     }
@@ -117,6 +143,29 @@ class Parser(
         val initializer = parseExpression(0)
 
         return VarDeclStmt(name.value, initializer)
+    }
+
+    fun parseUnitDecl(): Stmt {
+
+        advance() // consume 'unit'
+
+        val name = advance() // identifier
+
+        if (name?.tokenType != TokenType.Identifier) error("Expected unit name")
+
+        advance() // consume '='
+
+        val initializer = parseExpression(0)
+
+        if (initializer == null) throw IllegalStateException("Expected expression: Can't create custom unit with empty expression")
+
+        return UnitDeclStmt(name.value, initializer)
+    }
+
+    fun parsePrintStmt(): Stmt {
+        advance() // consume "print"
+        val expr = parseExpression(0)
+        return PrintStmt(expr)
     }
 
     /**

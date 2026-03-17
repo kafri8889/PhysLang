@@ -6,4 +6,8 @@ interface StmtVisitor<R> {
 
     fun visitVarDeclStmt(varDeclStmt: VarDeclStmt): R
 
+    fun visitPrintStmt(printStmt: PrintStmt): R
+
+    fun visitUnitDeclStmt(unitDeclStmt: UnitDeclStmt): R
+
 }

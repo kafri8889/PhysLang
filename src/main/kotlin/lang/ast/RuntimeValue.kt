@@ -1,10 +1,16 @@
-package lang.core
+package lang.ast
+
+/**
+ * Data type for runtime
+ */
+sealed interface RuntimeValue
 
 data class PhysicsValue(
     val value: Double,
     val dimensions: IntArray,
-    val scale: Double = 1.0
-) {
+    val scale: Double = 1.0,
+    val unitName: String? = null
+): RuntimeValue {
     val scaledValue: Double
         get() = value * scale
 
@@ -46,6 +52,9 @@ data class PhysicsValue(
     }
 
     override fun toString(): String {
+        if (unitName != null) {
+            return "$value $unitName"
+        }
 
         val matchedUnit = unitRegistry.entries.find {
             it.value.dimensions.contentEquals(this.dimensions)
@@ -123,4 +132,8 @@ data class PhysicsValue(
             "Ω" to PhysicsValue(1.0, intArrayOf(1,2,-3,-2,0,0,0), 1.0)  // Ohm
         )
     }
+}
+
+data class StringValue(val value: String) : RuntimeValue {
+    override fun toString(): String = value
 }

@@ -7,6 +7,6 @@ val keywords = buildMap {
     put("var", TokenType.Var)
     put("true", TokenType.True)
     put("false", TokenType.False)
-    put("=", TokenType.Assign)
-    put("==", TokenType.Equals)
+    put("print", TokenType.Print)
+    put("unit", TokenType.Unit)
 }

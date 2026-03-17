@@ -45,6 +45,20 @@ class Lexer(private val source: String) {
         return iden to tokenType
     }
 
+    fun parseStringLiteral(): String {
+        var content = ""
+
+        advance() // consume '"'
+
+        while (peek() != '"') {
+            content += advance()
+        }
+
+        advance() // consume '"'
+
+        return content
+    }
+
     fun lex(): List<Token> {
         while (currentGlobalPosition < source.length) {
             var tokenType: TokenType? = null
@@ -62,25 +76,61 @@ class Lexer(private val source: String) {
                     tokenType = TokenType.NumberLiteral
                     value = parseNumber()
                 }
+                peek() == '"' -> {
+                    tokenType = TokenType.StringLiteral
+                    value = parseStringLiteral()
+                }
                 peek() == '^' -> {
                     tokenType = TokenType.Power
                     value = advance().toString()
                 }
                 peek() == '+' -> {
-                    tokenType = TokenType.Plus
-                    value = advance().toString()
+                    if (lookahead(1) == '=') {
+                        tokenType = TokenType.PlusAssign
+                        value = "+="
+
+                        advance()
+                        advance()
+                    } else {
+                        tokenType = TokenType.Plus
+                        value = advance().toString()
+                    }
                 }
                 peek() == '-' -> {
-                    tokenType = TokenType.Minus
-                    value = advance().toString()
+                    if (lookahead(1) == '=') {
+                        tokenType = TokenType.MinusAssign
+                        value = "-="
+
+                        advance()
+                        advance()
+                    } else {
+                        tokenType = TokenType.Minus
+                        value = advance().toString()
+                    }
                 }
                 peek() == '*' -> {
-                    tokenType = TokenType.Multiply
-                    value = advance().toString()
+                    if (lookahead(1) == '=') {
+                        tokenType = TokenType.MultiplyAssign
+                        value = "*="
+
+                        advance()
+                        advance()
+                    } else {
+                        tokenType = TokenType.Multiply
+                        value = advance().toString()
+                    }
                 }
                 peek() == '/' -> {
-                    tokenType = TokenType.Divide
-                    value = advance().toString()
+                    if (lookahead(1) == '=') {
+                        tokenType = TokenType.DivideAssign
+                        value = "/="
+
+                        advance()
+                        advance()
+                    } else {
+                        tokenType = TokenType.Divide
+                        value = advance().toString()
+                    }
                 }
                 peek() == '(' -> {
                     tokenType = TokenType.OpenParenthesis

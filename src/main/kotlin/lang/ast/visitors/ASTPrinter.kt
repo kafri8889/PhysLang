@@ -38,6 +38,10 @@ class ASTPrinter : ExprVisitor<String> {
         )
     }
 
+    override fun visitStringLiteralExpr(expr: StringLiteralExpr): String {
+        return expr.value
+    }
+
     private fun parenthesize(
         name: String,
         vararg exprs: Expr

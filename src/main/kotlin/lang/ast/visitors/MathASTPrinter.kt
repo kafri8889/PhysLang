@@ -54,6 +54,10 @@ class MathASTPrinter : ExprVisitor<String> {
         )
     }
 
+    override fun visitStringLiteralExpr(expr: StringLiteralExpr): String {
+        return expr.value
+    }
+
     private fun parenthesize(
         operator: String,
         vararg exprs: Expr

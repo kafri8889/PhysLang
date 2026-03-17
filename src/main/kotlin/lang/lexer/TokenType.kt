@@ -34,5 +34,7 @@ enum class TokenType {
     True,
     False,
 
+    Print,
+    Unit,
     Eof;
 }

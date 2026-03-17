@@ -14,4 +14,6 @@ interface ExprVisitor<R> {
 
     fun visitAssignExpr(expr: AssignExpr): R
 
+    fun visitStringLiteralExpr(expr: StringLiteralExpr): R
+
 }

@@ -6,6 +6,12 @@ sealed class Expr: Node {
 
 }
 
+data class StringLiteralExpr(val value: String): Expr() {
+    override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
+        return exprVisitor.visitStringLiteralExpr(this)
+    }
+}
+
 class BinaryExpr(
     val left: Expr,
     val operator: TokenType,

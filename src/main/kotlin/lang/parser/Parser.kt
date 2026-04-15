@@ -72,7 +72,7 @@ class Parser(
                     if (right == null) return null
 
                     AssignExpr(left.name, right)
-                } else throw IllegalStateException("Unexpected token type ${token.tokenType}")
+                } else throw IllegalStateException("Unexpected token type in assign: ${token.tokenType}")
             }
             TokenType.PlusAssign,
             TokenType.MinusAssign,
@@ -89,13 +89,13 @@ class Parser(
                             TokenType.MinusAssign -> TokenType.Minus
                             TokenType.MultiplyAssign -> TokenType.Multiply
                             TokenType.DivideAssign -> TokenType.Divide
-                            else -> throw IllegalStateException("Unexpected token type ${token.tokenType}")
+                            else -> throw IllegalStateException("Unexpected token type in binary exp opr: ${token.tokenType}")
                         },
                         right = right
                     )
 
                     AssignExpr(left.name, binaryExpr)
-                } else throw IllegalStateException("Unexpected token type ${token.tokenType}")
+                } else throw IllegalStateException("Unexpected token type in divide assign: ${token.tokenType}")
             }
 
             TokenType.Plus,

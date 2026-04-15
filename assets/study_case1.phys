@@ -1,0 +1,47 @@
+// Sebuah bola bermassa 2 kg ditembakkan dari tanah dengan kecepatan awal 20 m/s dan sudut 37° terhadap horizontal.
+// Setelah menyentuh tanah, bola terus meluncur di permukaan kasar dengan koefisien gesek kinetik μ = 0.2 sampai berhenti.
+// dik:
+// g = 10 m/s^2
+// sin 37 = 0.6, cos 37 = 0.8
+// dit:
+// 1. Waktu total di udara?
+// 2. Jarak horizontal saat di udara?
+// 3. Energi kinetik saat menyentuh tanah?
+// 4. Jarak tambahan akibat gesekan sampai berhenti?
+// 5. Jarak total dari titik awal?
+
+// Definisikan unit yang akan digunakan
+unit g = 10 m/s^2
+unit v0 = 20 m/s
+var m = 2 kg
+var μ = 0.2
+
+// Jawab no 1
+// rumus gerak => t = (2 * v0 * sin theta) / g
+var t = (2 * v0 * 0.6) / g
+print "t = " + t
+
+// Jawab no 2
+// rumus jarak => R = v0 * cos theta * t
+var R = v0 * 0.8 * t
+print "R = " + R
+
+// Jawab no 3
+// rumus energi kinetik => E = 0.5 * m * v^2
+var Ek = 0.5 * m * v0^2
+print "Ek = " + Ek
+
+// Jawab no 4
+// rumus gaya gesek Ff => Ff = μ * m * g
+var Ff = μ * m * g
+print "Ff = " + Ff
+
+// jawab no 5
+// rumus gaya gesek akibat d => Ek = Ff * d
+var d = Ek / Ff
+print "d = " + d
+
+// jawab no 6
+// rumus jarak total => D_total = R + d
+var Dtotal = R + d
+print "D total = " + Dtotal

@@ -3,6 +3,7 @@ package lang.ast.visitors
 import lang.ast.*
 import lang.core.Environment
 import lang.lexer.TokenType
+import kotlin.math.pow
 
 class PhysicsEvaluator(
     private val environment: Environment = Environment()
@@ -84,7 +85,32 @@ class PhysicsEvaluator(
                     left.dimensions[i] - right.dimensions[i]
                 }
 
-                return PhysicsValue(value, newDimension)
+                PhysicsValue(value, newDimension)
+            }
+
+            TokenType.Power -> {
+                if (left !is PhysicsValue || right !is PhysicsValue) {
+                    throw Exception("The '^' operation can only be used for numbers or physical units!")
+                }
+
+                if (right.dimensions.any { it != 0 }) {
+                    throw Exception("The '^' operation can only be used for numbers!")
+                }
+
+                if (right.scaledValue % 1.0 != 0.0) {
+                    throw Exception("The '^' operation can only be used for integers!")
+                }
+
+                val exponent = right.scaledValue.toInt()
+                val value = left.scaledValue.pow(right.scaledValue)
+
+                // Contoh: (m^1 / s^1) ^ 2 -> m^(1*2) / s^(1*2) -> m^2 / s^2
+                val newDimension = IntArray(7) { i ->
+                    left.dimensions[i] * exponent
+                }
+
+                PhysicsValue(value, newDimension)
+
             }
             else -> throw Exception("Operator invalid or not supported: ${expr.operator}")
         }

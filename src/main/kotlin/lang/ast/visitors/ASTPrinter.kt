@@ -42,6 +42,10 @@ class ASTPrinter : ExprVisitor<String> {
         return expr.value
     }
 
+    override fun visitCallExpr(expr: CallExpr): String {
+        return "implement this call expr later"
+    }
+
     private fun parenthesize(
         name: String,
         vararg exprs: Expr

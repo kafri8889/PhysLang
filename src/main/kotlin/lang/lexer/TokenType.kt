@@ -35,6 +35,7 @@ enum class TokenType {
     False,
 
     Comment,
+    Comma,
     Slash,
     Print,
     Unit,

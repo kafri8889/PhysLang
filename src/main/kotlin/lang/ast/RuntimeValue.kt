@@ -1,9 +1,13 @@
 package lang.ast
 
+import lang.core.Callable
+
 /**
  * Data type for runtime
  */
-sealed interface RuntimeValue
+sealed interface RuntimeValue {
+    data class NativeFunction(val name: String, val callable: Callable) : RuntimeValue
+}
 
 data class PhysicsValue(
     val value: Double,
@@ -52,7 +56,7 @@ data class PhysicsValue(
     }
 
     override fun toString(): String {
-        if (unitName != null) {
+        if (!unitName.isNullOrEmpty()) {
             return "$value $unitName"
         }
 

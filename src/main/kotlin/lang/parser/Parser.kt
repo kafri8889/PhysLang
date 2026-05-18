@@ -42,8 +42,7 @@ class Parser(
                 }
             }
             TokenType.Minus -> {
-                val right = parseExpression(Precedence.fromToken(TokenType.Unary))
-                if (right == null) return null
+                val right = parseExpression(Precedence.fromToken(TokenType.Unary)) ?: return null
 
                 UnaryExpr(token.tokenType, right)
             }
@@ -68,8 +67,7 @@ class Parser(
         return when (token.tokenType) {
             TokenType.Assign -> {
                 if (left is VariableExpr) {
-                    val right = parseExpression(Precedence.fromToken(token.tokenType))
-                    if (right == null) return null
+                    val right = parseExpression(Precedence.fromToken(token.tokenType)) ?: return null
 
                     AssignExpr(left.name, right)
                 } else throw IllegalStateException("Unexpected token type in assign: ${token.tokenType}")
@@ -79,8 +77,7 @@ class Parser(
             TokenType.MultiplyAssign,
             TokenType.DivideAssign -> {
                 if (left is VariableExpr) {
-                    val right = parseExpression(Precedence.fromToken(token.tokenType))
-                    if (right == null) return null
+                    val right = parseExpression(Precedence.fromToken(token.tokenType)) ?: return null
 
                     val binaryExpr = BinaryExpr(
                         left = left,
@@ -96,6 +93,38 @@ class Parser(
 
                     AssignExpr(left.name, binaryExpr)
                 } else throw IllegalStateException("Unexpected token type in divide assign: ${token.tokenType}")
+            }
+
+            TokenType.OpenParenthesis -> {
+                val arguments = mutableListOf<Expr>()
+
+                // Cek apakah argumennya tidak kosong (misal bukan sekadar "()")
+                // Ganti TokenType.CloseParenthesis dengan nama token kurung tutup milikmu
+                if (peek()?.tokenType != TokenType.CloseParenthesis) {
+                    do {
+                        // Parse argumen (bisa berupa variabel, angka, atau math operation)
+                        val arg = parseExpression(0)
+                            ?: throw IllegalStateException("Expected expression in function arguments")
+
+                        arguments.add(arg)
+
+                        // Opsional: Jika bahasamu mendukung multi-argumen yang dipisah koma (misal: func(a, b))
+                        if (peek()?.tokenType == TokenType.Comma) { // Ganti dengan token koma milikmu
+                            advance() // Konsumsi token koma
+                        } else {
+                            break // Berhenti kalau tidak ada koma lagi
+                        }
+                    } while (peek() != null && peek()?.tokenType != TokenType.CloseParenthesis)
+                }
+
+                // Wajib mengonsumsi kurung tutup ')'
+                val closeToken = advance()
+                if (closeToken?.tokenType != TokenType.CloseParenthesis) {
+                    throw IllegalStateException("Expected ')' after function arguments, but got ${closeToken?.tokenType}")
+                }
+
+                // Return Node AST yang baru
+                CallExpr(callee = left, arguments = arguments)
             }
 
             TokenType.Plus,

@@ -51,6 +51,14 @@ class QuantityExpr(
     }
 }
 
+/**
+ * Declare new variable
+ *
+ * Example: `var mass = 10 kg`
+ *
+ * @property name Variable name
+ * @author Anaf
+ */
 class VariableExpr(
     val name: String
 ): Expr() {
@@ -61,6 +69,9 @@ class VariableExpr(
 
 /**
  * Assign expression to variable
+ *
+ * Example: `mass = 10 kg`
+ *
  * @property name Variable name
  * @property expr Expression
  * @author Anaf
@@ -71,5 +82,14 @@ class AssignExpr(
 ): Expr() {
     override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
         return exprVisitor.visitAssignExpr(this)
+    }
+}
+
+data class CallExpr(
+    val callee: Expr, // Siapa yang dipanggil (Contoh: Identifier "SI")
+    val arguments: List<Expr>
+): Expr() {
+    override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
+        return exprVisitor.visitCallExpr(this)
     }
 }

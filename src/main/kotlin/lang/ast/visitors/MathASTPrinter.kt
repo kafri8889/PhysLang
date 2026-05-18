@@ -59,6 +59,10 @@ class MathASTPrinter : ExprVisitor<String> {
         return expr.value
     }
 
+    override fun visitCallExpr(expr: CallExpr): String {
+        return "implement this call expr later"
+    }
+
     private fun parenthesize(
         operator: String,
         vararg exprs: Expr

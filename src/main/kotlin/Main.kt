@@ -6,6 +6,6 @@ fun main() {
     val cli = PhysCli()
     val stream = PhysRunner()
 
-    stream.runFile(File("D:\\DOCUMENTS_V3\\Java Kotlin Project\\PhysLang\\assets\\study_case1.phys"))
-//    cli.run()
+    stream.runFile(File("D:\\DOCUMENTS_V3\\Java_Kotlin_Project\\PhysLang\\assets\\SI_function_test.phys"))
+    cli.run()
 }

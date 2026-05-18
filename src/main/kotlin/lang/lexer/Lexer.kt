@@ -168,6 +168,10 @@ class Lexer(private val source: String) {
                     tokenType = TokenType.CloseBracket
                     value = advance().toString()
                 }
+                peek() == ',' -> {
+                    tokenType = TokenType.Comma
+                    value = advance().toString()
+                }
                 peek() == '=' -> {
                     if (lookahead(1) == '=') {
                         tokenType = TokenType.Equals

@@ -163,12 +163,16 @@ class PhysicsEvaluator(
         val physicsValue = expr.value.accept(this)
 
         if (physicsValue is StringValue) throw IllegalArgumentException("Cannot construct physics value from string, use numbers!")
-        if (physicsValue is PhysicsValue) return PhysicsValue(
-            value = physicsValue.value,
-            scale = unitScale.scale,
-            dimensions = unitScale.dimensions,
-            unitName = unitName
-        )
+        if (physicsValue is PhysicsValue) {
+            val baseUnit = unitScale
+
+            return PhysicsValue(
+                value = physicsValue.value,
+                scale = baseUnit.value * baseUnit.scale,
+                dimensions = unitScale.dimensions,
+                unitName = unitName
+            )
+        }
 
         throw Exception("Cannot construct physics value from $physicsValue, use numbers!")
     }
@@ -203,6 +207,8 @@ class PhysicsEvaluator(
     override fun visitAssignExpr(expr: AssignExpr): RuntimeValue {
         val value = expr.value.accept(this)
 
+        if (environment.getVar(expr.name) == null) throw Exception("Variable '${expr.name}' is not defined!")
+
         environment.putVar(expr.name, value)
 
         return value
@@ -210,6 +216,21 @@ class PhysicsEvaluator(
 
     override fun visitStringLiteralExpr(expr: StringLiteralExpr): RuntimeValue {
         return StringValue(expr.value)
+    }
+
+    override fun visitCallExpr(expr: CallExpr): RuntimeValue {
+        val callee = expr.callee.accept(this)
+        val args = expr.arguments.map { it.accept(this) }
+
+        if (callee !is RuntimeValue.NativeFunction) {
+            throw Exception("Error: Variabel ini bukan fungsi dan tidak bisa dipanggil!")
+        }
+
+        if (args.size != callee.callable.arity()) {
+            throw Exception("Error: Fungsi '${callee.name}' membutuhkan ${callee.callable.arity()} argumen, tapi kamu memberikan ${args.size}.")
+        }
+
+        return callee.callable.call(this, args)
     }
 
     override fun visitExprStmt(exprStmt: ExprStmt) {

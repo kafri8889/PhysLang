@@ -8,6 +8,7 @@ class Precedence {
 
         fun fromToken(tokenType: TokenType?): Int {
             return when (tokenType) {
+                TokenType.OpenParenthesis -> 100
                 TokenType.Assign -> 5
                 TokenType.PlusAssign -> 5
                 TokenType.MinusAssign -> 5

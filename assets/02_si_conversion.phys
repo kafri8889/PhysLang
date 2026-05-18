@@ -1,0 +1,9 @@
+// Convert a custom speed unit to base SI dimensions
+unit kph = 1000 m / 3600 s
+
+var citySpeed = 36 kph
+var highwaySpeed = 72 kph
+
+print "City speed: " + citySpeed
+print "City speed in SI: " + SI(citySpeed)
+print "Highway speed in SI: " + SI(highwaySpeed)

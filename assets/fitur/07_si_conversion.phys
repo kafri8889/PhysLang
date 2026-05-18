@@ -1,0 +1,10 @@
+// Feature: SI conversion
+// SI(value) converts a custom unit value back to base SI units.
+// It keeps the same dimensions.
+
+unit kph = 1000 m / 3600 s
+
+var speed = 72 kph
+
+print "Custom unit: " + speed
+print "Base SI unit: " + SI(speed)

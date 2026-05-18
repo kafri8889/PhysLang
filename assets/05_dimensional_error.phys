@@ -1,0 +1,5 @@
+// This example intentionally fails semantic analysis.
+// Mass and length cannot be added.
+
+var invalidResult = 5 kg + 10 m
+print invalidResult

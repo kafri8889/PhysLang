@@ -1,0 +1,12 @@
+// Feature: comments
+// Lines that start with // are ignored by the parser.
+// Comments are useful for explaining formulas.
+
+// Force formula:
+// F = m * a
+
+var mass = 8 kg
+var acceleration = 3 m / s^2
+var force = mass * acceleration
+
+print "Force: " + force

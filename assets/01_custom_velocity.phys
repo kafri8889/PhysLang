@@ -1,0 +1,10 @@
+// Custom derived unit: velocity
+unit velocity = 1 m / 1 s
+
+var speed = 10 velocity
+var duration = 5 s
+var distance = speed * duration
+
+print "Speed: " + speed
+print "Duration: " + duration
+print "Distance: " + distance

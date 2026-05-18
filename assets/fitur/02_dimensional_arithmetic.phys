@@ -1,0 +1,17 @@
+// Feature: dimensional arithmetic
+// Multiplication and division combine dimensions.
+// This example creates velocity, acceleration, force, and energy.
+
+var distance = 100 m
+var time = 10 s
+var mass = 2 kg
+
+var velocity = distance / time
+var acceleration = velocity / time
+var force = mass * acceleration
+var energy = force * distance
+
+print "Velocity: " + velocity
+print "Acceleration: " + acceleration
+print "Force: " + force
+print "Energy: " + energy

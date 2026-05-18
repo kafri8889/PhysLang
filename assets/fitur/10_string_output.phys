@@ -1,0 +1,11 @@
+// Feature: string output
+// Strings can be joined with physical values using +.
+// This is useful for clear printed results.
+
+var distance = 250 m
+var time = 25 s
+var speed = distance / time
+
+print "Distance is " + distance
+print "Time is " + time
+print "Speed is " + speed

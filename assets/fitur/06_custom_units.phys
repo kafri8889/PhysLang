@@ -1,0 +1,12 @@
+// Feature: custom units
+// Use unit to define a new unit from existing units.
+// The custom unit can be used like a built-in unit.
+
+unit kph = 1000 m / 3600 s
+unit minuteDistance = kph * min
+
+var citySpeed = 36 kph
+var distanceInOneMinute = citySpeed * 1 min
+
+print "City speed: " + citySpeed
+print "Distance in one minute: " + distanceInOneMinute

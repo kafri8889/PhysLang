@@ -1,0 +1,25 @@
+// Bridge wind-load approximation
+// Dynamic pressure is converted into lateral load, bending moment, and power transfer.
+
+unit squareMeter = m^2
+unit leverMoment = N * m
+
+var airDensity = 1.225 kg / m^3
+var windSpeed = 35 m / s
+var dragCoefficient = 1.2
+var exposedArea = 850 squareMeter
+var leverArm = 18 m
+
+var dynamicPressure = 0.5 * airDensity * windSpeed^2
+var designPressure = dynamicPressure * dragCoefficient
+var lateralForce = designPressure * exposedArea
+var bendingMoment = lateralForce * leverArm
+var windPowerTransfer = lateralForce * windSpeed
+var momentRatio = bendingMoment / 1000000 leverMoment
+
+print "Dynamic pressure: " + dynamicPressure
+print "Design pressure: " + designPressure
+print "Lateral force: " + lateralForce
+print "Bending moment: " + bendingMoment
+print "Wind power transfer: " + windPowerTransfer
+print "Moment / 1,000,000 N*m: " + momentRatio

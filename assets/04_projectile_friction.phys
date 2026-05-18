@@ -1,0 +1,24 @@
+// Projectile motion followed by sliding friction
+// Scenario:
+// A 2 kg ball is launched at 20 m/s with sin(theta)=0.6 and cos(theta)=0.8.
+// Gravity is 10 m/s^2. After landing, the ball slides with kinetic friction coefficient 0.2.
+
+unit gravity = 10 m / s^2
+unit launchSpeed = 20 m / s
+
+var mass = 2 kg
+var frictionCoefficient = 0.2
+
+var flightTime = (2 * launchSpeed * 0.6) / gravity
+var range = launchSpeed * 0.8 * flightTime
+var kineticEnergy = 0.5 * mass * launchSpeed^2
+var frictionForce = frictionCoefficient * mass * gravity
+var slidingDistance = kineticEnergy / frictionForce
+var totalDistance = range + slidingDistance
+
+print "Flight time: " + flightTime
+print "Range: " + range
+print "Kinetic energy at landing: " + kineticEnergy
+print "Friction force: " + frictionForce
+print "Sliding distance: " + slidingDistance
+print "Total distance: " + totalDistance

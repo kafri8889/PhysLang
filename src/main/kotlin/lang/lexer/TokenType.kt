@@ -2,7 +2,10 @@ package lang.lexer
 
 data class Token(
     val value: String,
-    val tokenType: TokenType
+    val tokenType: TokenType,
+    val line: Int,
+    val startColumn: Int,
+    val endColumn: Int,
 )
 
 enum class TokenType {
@@ -39,5 +42,6 @@ enum class TokenType {
     Slash,
     Print,
     Unit,
+    Eol,
     Eof;
 }

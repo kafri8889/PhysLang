@@ -1,0 +1,13 @@
+// Compose several derived quantities from base units.
+
+unit newton = kg * m / s^2
+unit joule = newton * m
+
+var force = 25 newton
+var displacement = 4 m
+var work = force * displacement
+
+print "Force: " + force
+print "Displacement: " + displacement
+print "Work: " + work
+print "Work in SI: " + SI(work)

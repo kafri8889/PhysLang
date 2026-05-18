@@ -1,5 +1,0 @@
-unit velocity = 1m/1s
-var v = 10 velocity
-var t = 5 s
-var distance = v * t
-print distance

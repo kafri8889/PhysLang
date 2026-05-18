@@ -1,0 +1,9 @@
+// Feature: strict dimension checking
+// Values can only be added or subtracted when their dimensions match.
+// This file is intentionally invalid.
+
+var mass = 10 kg
+var length = 5 m
+var invalidResult = mass + length
+
+print invalidResult

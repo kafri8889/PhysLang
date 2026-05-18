@@ -1,0 +1,23 @@
+// Fluid pipeline pump approximation
+// Estimates flow velocity, dynamic pressure, pump power, and daily energy.
+
+unit cubicMeterPerSecond = m^3 / s
+unit squareMeter = m^2
+
+var waterDensity = 1000 kg / m^3
+var volumeFlow = 2.4 cubicMeterPerSecond
+var pipeArea = 0.785 squareMeter
+var pressureLoss = 180000 Pa
+var operationTime = 24 h
+
+var flowVelocity = volumeFlow / pipeArea
+var dynamicPressure = 0.5 * waterDensity * flowVelocity^2
+var pumpPower = pressureLoss * volumeFlow
+var dailyEnergy = pumpPower * operationTime
+var pressureRatio = dynamicPressure / pressureLoss
+
+print "Flow velocity: " + flowVelocity
+print "Dynamic pressure: " + dynamicPressure
+print "Pump power: " + pumpPower
+print "Daily pump energy: " + dailyEnergy
+print "Dynamic pressure / pressure loss: " + pressureRatio

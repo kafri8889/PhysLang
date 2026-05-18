@@ -1,0 +1,9 @@
+// Feature: variable reassignment
+// A variable can be updated after it already exists.
+// Reassignment without a previous var declaration is not allowed.
+
+var speed = 10 m / s
+print "Initial speed: " + speed
+
+speed = speed + 5 m / s
+print "Updated speed: " + speed

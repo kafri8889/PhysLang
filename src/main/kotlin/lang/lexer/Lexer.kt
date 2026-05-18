@@ -1,8 +1,14 @@
 package lang.lexer
 
 import lang.core.keywords
+import lang.error.Diagnostic
+import lang.error.DiagnosticType
+import lang.error.ErrorReporter
 
-class Lexer(private val source: String) {
+class Lexer(
+    private val source: String,
+    private val reporter: ErrorReporter = ErrorReporter()
+) {
     private val tokens = mutableListOf<Token>()
 
     private var currentGlobalPosition = 0
@@ -10,9 +16,17 @@ class Lexer(private val source: String) {
     private var currentLine = 0
 
     fun advance(): Char? {
-        val tok = peek()
+        val ch = peek() ?: return null
         currentGlobalPosition++
-        return tok
+
+        if (ch == '\n') {
+            currentLine++
+            currentPositionInLine = 0
+        } else {
+            currentPositionInLine++
+        }
+
+        return ch
     }
 
     fun peek(): Char? {
@@ -49,13 +63,25 @@ class Lexer(private val source: String) {
         return iden to tokenType
     }
 
-    fun parseStringLiteral(): String {
+    fun parseStringLiteral(startCol: Int): String {
         var content = ""
 
         advance() // consume '"'
 
         while (peek() != '"') {
             content += advance()
+        }
+
+        if (peek() == null) {
+            reporter.report(
+                Diagnostic(
+                    message = "Unterminated string literal",
+                    type = DiagnosticType.ERROR,
+                    line = currentLine,
+                    column = startCol until currentPositionInLine
+                )
+            )
+            return content
         }
 
         advance() // consume '"'
@@ -80,8 +106,15 @@ class Lexer(private val source: String) {
         while (currentGlobalPosition < source.length) {
             var tokenType: TokenType? = null
             var value: String? = null
+            val startCol = currentPositionInLine
 
             when {
+                peek() == '\n' -> {
+                    tokenType = TokenType.Eol
+                    value = "\\n"
+                    advance()
+                }
+                peek() == '\r' -> advance()
                 peek()?.isWhitespace() == true -> advance()
                 peek()?.isLetter() == true -> {
                     val (s, t) = parseIdentifier()
@@ -95,7 +128,7 @@ class Lexer(private val source: String) {
                 }
                 peek() == '"' -> {
                     tokenType = TokenType.StringLiteral
-                    value = parseStringLiteral()
+                    value = parseStringLiteral(startCol)
                 }
                 peek() == '^' -> {
                     tokenType = TokenType.Power
@@ -187,8 +220,12 @@ class Lexer(private val source: String) {
                 else -> advance()
             }
 
-            if (value != null && tokenType != null) tokens.add(Token(value, tokenType))
+            val endCol = currentPositionInLine
+
+            if (value != null && tokenType != null) tokens.add(Token(value, tokenType, currentLine, startCol, endCol))
         }
+
+        tokens.add(Token("", TokenType.Eof, currentLine, currentPositionInLine, currentPositionInLine))
 
         return tokens
     }

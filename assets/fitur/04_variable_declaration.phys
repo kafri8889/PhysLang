@@ -1,0 +1,10 @@
+// Feature: variable declaration
+// Use var to create a new variable.
+// The variable stores a full physical value, not only a raw number.
+
+var mass = 12 kg
+var gravity = 9.8 m / s^2
+var weight = mass * gravity
+
+print "Mass: " + mass
+print "Weight: " + weight

@@ -1,5 +1,6 @@
 package lang.ast
 
+import lang.lexer.Token
 import lang.lexer.TokenType
 
 sealed class Expr: Node {
@@ -14,18 +15,22 @@ data class StringLiteralExpr(val value: String): Expr() {
 
 class BinaryExpr(
     val left: Expr,
-    val operator: TokenType,
+    val operatorToken: Token,
     val right: Expr
 ): Expr() {
+    val operator: TokenType get() = operatorToken.tokenType
+
     override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
         return exprVisitor.visitBinaryExpr(this)
     }
 }
 
 class UnaryExpr(
-    val operator: TokenType,
+    val operatorToken: Token,
     val right: Expr
 ): Expr() {
+    val operator: TokenType get() = operatorToken.tokenType
+
     override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
         return exprVisitor.visitUnaryExpr(this)
     }
@@ -56,12 +61,14 @@ class QuantityExpr(
  *
  * Example: `var mass = 10 kg`
  *
- * @property name Variable name
+ * @property nameToken Variable name as token
  * @author Anaf
  */
 class VariableExpr(
-    val name: String
+    val nameToken: Token
 ): Expr() {
+    val name: String get() = nameToken.value
+
     override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
         return exprVisitor.visitVariableExpr(this)
     }
@@ -72,21 +79,33 @@ class VariableExpr(
  *
  * Example: `mass = 10 kg`
  *
- * @property name Variable name
- * @property expr Expression
+ * @property nameToken Variable name as token
+ * @property value Expression
  * @author Anaf
  */
 class AssignExpr(
-    val name: String,
+    val nameToken: Token,
     val value: Expr
 ): Expr() {
+    val name: String get() = nameToken.value
+
     override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
         return exprVisitor.visitAssignExpr(this)
     }
 }
 
+/**
+ * Call function
+ *
+ * Example: `SI(10)`
+ *
+ * @property callee Function name
+ * @property parenToken Parenthesis token
+ * @property arguments Arguments
+ */
 data class CallExpr(
     val callee: Expr, // Siapa yang dipanggil (Contoh: Identifier "SI")
+    val parenToken: Token,
     val arguments: List<Expr>
 ): Expr() {
     override fun <R> accept(exprVisitor: ExprVisitor<R>): R {

@@ -9,64 +9,49 @@ class PhysicsEvaluator(
     private val environment: Environment = Environment()
 ): ExprVisitor<RuntimeValue>, StmtVisitor<Unit> {
 
-    private fun dimensionEquals(left: IntArray, right: IntArray): Boolean {
-        return if (right.all { it == 0 }) true // Scalar
-        else left.contentEquals(right)
-    }
-
     override fun visitBinaryExpr(expr: BinaryExpr): RuntimeValue {
         val left = expr.left.accept(this)
         val right = expr.right.accept(this)
 
         return when (expr.operator) {
             TokenType.Plus -> {
-                if (left is PhysicsValue && right is PhysicsValue) {
-                    if (!dimensionEquals(left.dimensions, right.dimensions)) {
-                        throw Exception("Dimensions mismatch: Cant sum different dimensions.")
+                when {
+                    left is PhysicsValue && right is PhysicsValue -> {
+                        val total = left.scaledValue + right.scaledValue
+                        val newValue = total / left.scale
+
+                        PhysicsValue(
+                            value = newValue,
+                            dimensions = left.dimensions,
+                            scale = left.scale,
+                            unitName = left.unitName
+                        )
                     }
 
-                    val total = left.scaledValue + right.scaledValue
-                    val newValue = total / left.scale
+                    left is StringValue || right is StringValue -> {
+                        StringValue(left.toString() + right.toString())
+                    }
 
-                    return PhysicsValue(
-                        value = newValue,
-                        dimensions = left.dimensions,
-                        scale = left.scale,
-                        unitName = left.unitName
-                    )
+                    else -> PhysicsValue.zero
                 }
-
-                // String + String, String + PV (String Concatenation)
-                // Example: "Result: " + 5 kg -> "Result: 5.0 kg"
-                if (left is StringValue || right is StringValue) {
-                    return StringValue(left.toString() + right.toString())
-                }
-
-                throw Exception("Operation (\"+\") not supported yet!")
             }
             TokenType.Minus -> {
-                if (left is PhysicsValue && right is PhysicsValue) {
-                    if (!dimensionEquals(left.dimensions, right.dimensions)) {
-                        throw Exception("Dimensions mismatch: Cant sub different dimensions.")
-                    }
+                left as PhysicsValue
+                right as PhysicsValue
 
-                    val total = left.scaledValue - right.scaledValue
-                    val newValue = total / left.scale
+                val total = left.scaledValue - right.scaledValue
+                val newValue = total / left.scale
 
-                    return PhysicsValue(
-                        value = newValue,
-                        dimensions = left.dimensions,
-                        scale = left.scale,
-                        unitName = left.unitName
-                    )
-                }
-
-                throw Exception("Operation (\"-\") not supported yet!")
+                PhysicsValue(
+                    value = newValue,
+                    dimensions = left.dimensions,
+                    scale = left.scale,
+                    unitName = left.unitName
+                )
             }
             TokenType.Multiply -> {
-                if (left !is PhysicsValue || right !is PhysicsValue) {
-                    throw Exception("The '*' operation can only be used for numbers or physical units!")
-                }
+                left as PhysicsValue
+                right as PhysicsValue
 
                 val value = left.scaledValue * right.scaledValue
                 val newDimension = IntArray(7) { i ->
@@ -76,9 +61,8 @@ class PhysicsEvaluator(
                 PhysicsValue(value, newDimension)
             }
             TokenType.Divide -> {
-                if (left !is PhysicsValue || right !is PhysicsValue) {
-                    throw Exception("The '/' operation can only be used for numbers or physical units!")
-                }
+                left as PhysicsValue
+                right as PhysicsValue
 
                 val value = left.scaledValue / right.scaledValue
                 val newDimension = IntArray(7) { i ->
@@ -89,17 +73,8 @@ class PhysicsEvaluator(
             }
 
             TokenType.Power -> {
-                if (left !is PhysicsValue || right !is PhysicsValue) {
-                    throw Exception("The '^' operation can only be used for numbers or physical units!")
-                }
-
-                if (right.dimensions.any { it != 0 }) {
-                    throw Exception("The '^' operation can only be used for numbers!")
-                }
-
-                if (right.scaledValue % 1.0 != 0.0) {
-                    throw Exception("The '^' operation can only be used for integers!")
-                }
+                left as PhysicsValue
+                right as PhysicsValue
 
                 val exponent = right.scaledValue.toInt()
                 val value = left.scaledValue.pow(right.scaledValue)
@@ -112,7 +87,7 @@ class PhysicsEvaluator(
                 PhysicsValue(value, newDimension)
 
             }
-            else -> throw Exception("Operator invalid or not supported: ${expr.operator}")
+            else -> PhysicsValue.zero
         }
     }
 
@@ -126,7 +101,7 @@ class PhysicsEvaluator(
                 scale = right.scale,
                 unitName = right.unitName
             )
-            else -> throw Exception("Operation (\"${expr.operator}\") can't be applied to ${right}!")
+            else -> return PhysicsValue.zero
         }
     }
 
@@ -134,7 +109,7 @@ class PhysicsEvaluator(
         val value = when (val literal = literal.value) {
             is LiteralValue.IntVal -> literal.value.toDouble()
             is LiteralValue.DoubleVal -> literal.value
-            else -> throw Exception("Invalid literal: $literal")
+            else -> 0.0
         }
 
         return PhysicsValue(
@@ -156,25 +131,16 @@ class PhysicsEvaluator(
             unitScale = PhysicsValue.unitRegistry[unitName]
         }
 
-        if (unitScale == null) {
-            throw Exception("Unknown unit: $unitName")
-        }
-
         val physicsValue = expr.value.accept(this)
+        physicsValue as PhysicsValue
+        val baseUnit = unitScale ?: PhysicsValue.zero
 
-        if (physicsValue is StringValue) throw IllegalArgumentException("Cannot construct physics value from string, use numbers!")
-        if (physicsValue is PhysicsValue) {
-            val baseUnit = unitScale
-
-            return PhysicsValue(
-                value = physicsValue.value,
-                scale = baseUnit.value * baseUnit.scale,
-                dimensions = unitScale.dimensions,
-                unitName = unitName
-            )
-        }
-
-        throw Exception("Cannot construct physics value from $physicsValue, use numbers!")
+        return PhysicsValue(
+            value = physicsValue.value,
+            scale = baseUnit.value * baseUnit.scale,
+            dimensions = baseUnit.dimensions,
+            unitName = unitName
+        )
     }
 
     override fun visitVariableExpr(expr: VariableExpr): RuntimeValue {
@@ -201,13 +167,11 @@ class PhysicsEvaluator(
             )
         }
 
-        throw Exception("Variable or unit '${expr.name}' is not defined!")
+        return PhysicsValue.zero
     }
 
     override fun visitAssignExpr(expr: AssignExpr): RuntimeValue {
         val value = expr.value.accept(this)
-
-        if (environment.getVar(expr.name) == null) throw Exception("Variable '${expr.name}' is not defined!")
 
         environment.putVar(expr.name, value)
 
@@ -222,14 +186,7 @@ class PhysicsEvaluator(
         val callee = expr.callee.accept(this)
         val args = expr.arguments.map { it.accept(this) }
 
-        if (callee !is RuntimeValue.NativeFunction) {
-            throw Exception("Error: Variabel ini bukan fungsi dan tidak bisa dipanggil!")
-        }
-
-        if (args.size != callee.callable.arity()) {
-            throw Exception("Error: Fungsi '${callee.name}' membutuhkan ${callee.callable.arity()} argumen, tapi kamu memberikan ${args.size}.")
-        }
-
+        callee as RuntimeValue.NativeFunction
         return callee.callable.call(this, args)
     }
 
@@ -244,8 +201,6 @@ class PhysicsEvaluator(
     override fun visitVarDeclStmt(varDeclStmt: VarDeclStmt) {
         val value = varDeclStmt.initializer?.accept(this)
 
-        if (environment.getVar(varDeclStmt.name) != null) throw Exception("Conflicting declaration: ${varDeclStmt.name} already defined!")
-
         environment.putVar(varDeclStmt.name, value)
     }
 
@@ -258,7 +213,6 @@ class PhysicsEvaluator(
     override fun visitUnitDeclStmt(unitDeclStmt: UnitDeclStmt) {
         val value = unitDeclStmt.initializer.accept(this)
 
-        if (value is StringValue) throw Exception("Cant create new unit from string!")
         if (value is PhysicsValue) environment.putUnit(unitDeclStmt.name, value)
     }
 }

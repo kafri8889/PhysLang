@@ -1,0 +1,7 @@
+// Feature: quantity literals
+// A number can be written together with a unit.
+// The result is not just a number. It is a physical value with dimensions.
+
+print 10 kg
+print 5 m
+print 2 s

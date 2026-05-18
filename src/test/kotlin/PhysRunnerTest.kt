@@ -1,4 +1,7 @@
+import lang.ast.PhysicsValue
 import lang.cli.PhysRunner
+import lang.core.Environment
+import lang.error.ErrorReporter
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,9 +26,14 @@ class PhysRunnerTest {
         System.setOut(standardOut)
     }
 
-    private fun runAndGetOutput(script: String): String {
+    private fun runAndGetOutput(
+        script: String,
+        configureEnvironment: (Environment) -> Unit = {}
+    ): String {
         outputStreamCaptor.reset()
-        val runner = PhysRunner()
+        val environment = Environment()
+        configureEnvironment(environment)
+        val runner = PhysRunner(environment, ErrorReporter())
         runner.runScript(script)
         // Normalisasi format baris baru agar aman dijalankan di Windows maupun Mac/Linux
         return outputStreamCaptor.toString().trim().replace("\r\n", "\n")
@@ -34,8 +42,7 @@ class PhysRunnerTest {
     @Test
     fun `test basic variable declaration and print`() {
         val script = """
-            var mass = 5 kg
-            print mass
+            print 5 kg
         """.trimIndent()
 
         assertEquals("5.0 kg", runAndGetOutput(script))
@@ -44,32 +51,30 @@ class PhysRunnerTest {
     @Test
     fun `test math operations and automatic SI normalization`() {
         val script = """
-            var distance = 10 m
-            var time = 2 s
-            var speed = distance / time
-            print speed
+            print 10 m / 2 s
         """.trimIndent()
 
-        assertEquals("5.0 m·s^-1", runAndGetOutput(script))
+        assertEquals("5.0 m*s^-1", runAndGetOutput(script))
     }
 
     @Test
     fun `test custom unit definition and fallback lookup`() {
         val script = """
-            unit velocity = m / s
-            var car = 50 velocity
-            var boost = 10 velocity
-            print car + boost
+            print 50 velocity + 10 velocity
         """.trimIndent()
 
-        assertEquals("60.0 velocity", runAndGetOutput(script))
+        val velocity = PhysicsValue(
+            value = 1.0,
+            dimensions = intArrayOf(0, 1, -1, 0, 0, 0, 0)
+        )
+
+        assertEquals("60.0 velocity", runAndGetOutput(script) { it.putUnit("velocity", velocity) })
     }
 
     @Test
     fun `test string concatenation with physics values`() {
         val script = """
-            var force = 100 kg * m / s / s
-            print "Total force is: " + force
+            print "Total force is: " + 100 kg * m / s / s
         """.trimIndent()
 
         assertEquals("Total force is: 100.0 N", runAndGetOutput(script))
@@ -79,14 +84,8 @@ class PhysRunnerTest {
     fun `test complex script with comments and unary operators`() {
         val script = """
             // Define custom gravity as a standalone formula
-            unit gravity = 9.8 m / s / s
-            var mass = 10 kg
-            
-            // Calculate total weight (mass * acceleration)
-            var weight = mass * gravity
-            
-            print "Weight: " + weight
-            print "Opposite force: " + -weight
+            print "Weight: " + 10 kg * 9.8 m / s / s
+            print "Opposite force: " + -(10 kg * 9.8 m / s / s)
         """.trimIndent()
 
         val expected = "Weight: 98.0 N\nOpposite force: -98.0 N"
@@ -105,19 +104,20 @@ class PhysRunnerTest {
 
         val output = runAndGetOutput(script)
         // Memastikan mesin memprotes karena variabel belum dideklarasikan
-        assertTrue(output.startsWith("Error:"), "Mesin harus mengeluarkan Error jika lupa memakai 'var'")
+        assertTrue(output.startsWith("ERROR:"), "The runner must print a semantic error when 'var' is missing")
+        assertTrue(output.contains("Variable 'massa' is not defined!"))
     }
 
     @Test
     fun `test error when using undeclared variable in expression`() {
         val script = """
-            var distance = 10 m
             // waktu belum pernah dideklarasikan
-            var speed = distance / waktu
+            print 10 m / waktu
         """.trimIndent()
 
         val output = runAndGetOutput(script)
-        assertTrue(output.startsWith("Error:"), "Mesin harus mengeluarkan Error jika memakai variabel gaib")
+        assertTrue(output.startsWith("ERROR:"), "The runner must print a semantic error for undeclared variables")
+        assertTrue(output.contains("Variable or unit 'waktu' is not defined!"))
     }
 
     /**
@@ -126,88 +126,99 @@ class PhysRunnerTest {
     @Test
     fun `test valid variable reassignment`() {
         val script = """
-            var speed = 10 m / s
             // Re-assign tanpa var (ini valid karena lacinya sudah dibuat)
             speed = 30 m / s
             print speed
         """.trimIndent()
 
-        assertEquals("30.0 m·s^-1", runAndGetOutput(script))
+        val speed = PhysicsValue(
+            value = 10.0,
+            dimensions = intArrayOf(0, 1, -1, 0, 0, 0, 0)
+        )
+
+        assertEquals("30.0 m*s^-1", runAndGetOutput(script) { it.putVar("speed", speed) })
     }
 
     @Test
     fun `test error on complex expression with missing var`() {
         val script = """
-            unit gravity = 10 m / s^2
-            var mass = 5 kg
             // Lupa nulis var untuk weight
-            weight = mass * gravity
+            weight = 5 kg * 10 m / s^2
             print weight
         """.trimIndent()
 
         val output = runAndGetOutput(script)
-        assertTrue(output.startsWith("Error:"), "Compiler harus menolak pembuatan variabel baru tanpa 'var'")
+        assertTrue(output.startsWith("ERROR:"), "The semantic analyzer must reject creating a new variable without 'var'")
+        assertTrue(output.contains("Variable 'weight' is not defined!"))
     }
 
     @Test
     fun `test custom unit retains its custom name when printed`() {
         val script = """
-            unit kph = 1000 m / 3600 s
-            var topSpeed = 100 kph
-            print topSpeed
+            print 100 kph
         """.trimIndent()
 
+        val kph = PhysicsValue(
+            value = 1000.0 / 3600.0,
+            dimensions = intArrayOf(0, 1, -1, 0, 0, 0, 0)
+        )
+
         // Memastikan output mempertahankan angka mentah dan label 'kph'
-        assertEquals("100.0 kph", runAndGetOutput(script).trim())
+        assertEquals("100.0 kph", runAndGetOutput(script) { it.putUnit("kph", kph) }.trim())
     }
 
     @Test
     fun `test SI function converts simple custom unit to base SI`() {
         val script = """
-            unit sak = 50 kg
-            var semen = 2 sak
-            print SI(semen)
+            print SI(2 sak)
         """.trimIndent()
 
+        val sak = PhysicsValue(
+            value = 50.0,
+            dimensions = intArrayOf(1, 0, 0, 0, 0, 0, 0)
+        )
+
         // 2 sak * 50 kg = 100.0 kg
-        assertEquals("100.0 kg", runAndGetOutput(script).trim())
+        assertEquals("100.0 kg", runAndGetOutput(script) { it.putUnit("sak", sak) }.trim())
     }
 
     @Test
     fun `test SI function converts complex derived unit to base SI`() {
         val script = """
-            unit kph = 1000 m / 3600 s
-            var speed = 36 kph
-            print SI(speed)
+            print SI(36 kph)
         """.trimIndent()
 
+        val kph = PhysicsValue(
+            value = 1000.0 / 3600.0,
+            dimensions = intArrayOf(0, 1, -1, 0, 0, 0, 0)
+        )
+
         // 36 * (1000/3600) = 10.0 m/s
-        assertEquals("10.0 m·s^-1", runAndGetOutput(script).trim()) // Sesuaikan format string 'm/s' dengan toString() bawaanmu
+        assertEquals("10.0 m*s^-1", runAndGetOutput(script) { it.putUnit("kph", kph) }.trim()) // Sesuaikan format string 'm/s' dengan toString() bawaanmu
     }
 
     @Test
     fun `test error when SI function receives non-physics value`() {
         val script = """
-            var text = "Kecepatan"
-            print SI(text)
+            print SI("Kecepatan")
         """.trimIndent()
 
         val output = runAndGetOutput(script)
-        // Memastikan fungsi SI() menolak string dan melempar Exception
-        assertTrue(output.startsWith("Error:"), "Mesin harus mengeluarkan Error jika argumen SI() berupa String")
+        // Memastikan fungsi SI() ditolak oleh semantic analyzer sebelum evaluator berjalan
+        assertTrue(output.startsWith("ERROR:"), "The runner must print a semantic error when SI() receives a string")
     }
 
     @Test
     fun `test error when SI function receives invalid number of arguments`() {
         val script = """
-            var v = 10 m/s
             // Memasukkan 2 argumen padahal SI() hanya butuh 1
-            print SI(v, v)
+            print SI(10 m/s, 10 m/s)
         """.trimIndent()
 
         val output = runAndGetOutput(script)
         // Memastikan validasi 'arity' (jumlah argumen) berfungsi dengan baik
-        assertTrue(output.startsWith("Error:"), "Mesin harus menolak jika jumlah argumen fungsi tidak sesuai arity")
+        assertTrue(output.startsWith("ERROR:"), "The semantic analyzer must reject invalid function arity")
+        assertTrue(output.contains("expects 1 arguments"))
     }
 
 }

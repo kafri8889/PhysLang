@@ -1,14 +1,26 @@
 package lang.ast
 
+import lang.lexer.Token
+
 sealed interface LiteralValue {
 
-    data class IntVal(val value: Int) : LiteralValue
+    val valueToken: Token
 
-    data class DoubleVal(val value: Double) : LiteralValue
+    data class IntVal(override val valueToken: Token) : LiteralValue {
+        val value: Int get() = valueToken.value.toInt()
+    }
 
-    data class StringVal(val value: String) : LiteralValue
+    data class DoubleVal(override val valueToken: Token) : LiteralValue {
+        val value: Double get() = valueToken.value.toDouble()
+    }
 
-    data class BoolVal(val value: Boolean) : LiteralValue
+    data class StringVal(override val valueToken: Token) : LiteralValue {
+        val value: String get() = valueToken.value
+    }
+
+    data class BoolVal(override val valueToken: Token) : LiteralValue {
+        val value: Boolean get() = valueToken.value.toBoolean()
+    }
 
 }
 

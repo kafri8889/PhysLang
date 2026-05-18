@@ -1,0 +1,24 @@
+// Vehicle crash dynamics approximation
+// This model estimates momentum, kinetic energy, stopping force, and crush distance.
+
+unit kmh = 1000 m / 3600 s
+unit millisecond = 0.001 s
+
+var vehicleMass = 1.6 t
+var impactSpeed = 96 kmh
+var stoppingTime = 120 millisecond
+
+var momentum = vehicleMass * impactSpeed
+var kineticEnergy = 0.5 * vehicleMass * impactSpeed^2
+var averageDeceleration = impactSpeed / stoppingTime
+var averageImpactForce = vehicleMass * averageDeceleration
+var crushDistance = 0.5 * impactSpeed * stoppingTime
+var forceRatioToOneKiloNewton = averageImpactForce / 1000 N
+
+print "Impact speed in SI: " + SI(impactSpeed)
+print "Momentum: " + momentum
+print "Kinetic energy: " + kineticEnergy
+print "Average deceleration: " + averageDeceleration
+print "Average impact force: " + averageImpactForce
+print "Crush distance: " + crushDistance
+print "Force / 1000 N: " + forceRatioToOneKiloNewton

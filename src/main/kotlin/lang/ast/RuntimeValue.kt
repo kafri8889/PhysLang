@@ -52,7 +52,7 @@ data class PhysicsValue(
             }
         }
 
-        return parts.joinToString("·")
+        return parts.joinToString("*")
     }
 
     override fun toString(): String {
@@ -76,6 +76,9 @@ data class PhysicsValue(
 
         val emptyDimensions: IntArray
             get() = IntArray(7)
+
+        val zero: PhysicsValue
+            get() = PhysicsValue(0.0, emptyDimensions)
 
         // [M, L, T, I, Θ, N, J]
         // Mass, Length, Time, Current, Temperature, Amount, Luminous

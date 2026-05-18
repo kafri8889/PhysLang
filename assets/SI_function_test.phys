@@ -1,4 +1,0 @@
-unit kph = 1000m/3600s
-var speed = 2 kph
-print "With custom unit: " + speed
-print "Unpack unit: " + SI(speed)

@@ -1,0 +1,24 @@
+// Spacecraft orbital energy approximation
+// Uses Earth's gravitational parameter to estimate orbital energy and required force.
+
+unit earthMu = 398600000000000.0 * m^3 / s^2
+
+var spacecraftMass = 1200 kg
+var orbitalRadius = 7000000 m
+var orbitalSpeed = 7500 m / s
+
+var specificKineticEnergy = 0.5 * orbitalSpeed^2
+var specificPotentialEnergy = earthMu / orbitalRadius
+var specificOrbitalEnergy = specificKineticEnergy - specificPotentialEnergy
+var totalOrbitalEnergy = spacecraftMass * specificOrbitalEnergy
+var centripetalAcceleration = orbitalSpeed^2 / orbitalRadius
+var requiredCentripetalForce = spacecraftMass * centripetalAcceleration
+var orbitalPeriodEstimate = 2 * 3.14159 * orbitalRadius / orbitalSpeed
+
+print "Specific kinetic energy: " + specificKineticEnergy
+print "Specific potential energy: " + specificPotentialEnergy
+print "Specific orbital energy: " + specificOrbitalEnergy
+print "Total orbital energy: " + totalOrbitalEnergy
+print "Centripetal acceleration: " + centripetalAcceleration
+print "Required centripetal force: " + requiredCentripetalForce
+print "Orbital period estimate: " + orbitalPeriodEstimate

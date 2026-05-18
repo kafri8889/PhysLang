@@ -1,0 +1,16 @@
+// Simple game-physics calculation
+unit frame = 0.016 s
+unit pixel = 0.001 m
+
+var enemyMass = 85.5 kg
+var baseSpeed = 200 pixel / frame
+
+baseSpeed = baseSpeed + 50 pixel / frame
+
+var kineticEnergy = 0.5 * enemyMass * baseSpeed^2
+var impactForce = enemyMass * (baseSpeed / (10 frame))
+
+print "Final speed: " + baseSpeed
+print "Impact energy: " + kineticEnergy
+print "Impact force: " + impactForce
+print "Opposite force: " + -impactForce

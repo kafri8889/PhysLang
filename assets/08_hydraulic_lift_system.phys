@@ -1,0 +1,23 @@
+// Hydraulic lift system approximation
+// A small piston creates pressure that is transferred to a larger lifting piston.
+
+unit squareMeter = m^2
+unit liter = 0.001 * m^3
+
+var gravity = 9.81 m / s^2
+var pumpForce = 450 N
+var smallPistonArea = 0.003 squareMeter
+var liftPistonArea = 0.18 squareMeter
+var fluidFlow = 12 liter / min
+
+var hydraulicPressure = pumpForce / smallPistonArea
+var liftingForce = hydraulicPressure * liftPistonArea
+var supportedMass = liftingForce / gravity
+var liftSpeed = fluidFlow / liftPistonArea
+var liftPower = liftingForce * liftSpeed
+
+print "Hydraulic pressure: " + hydraulicPressure
+print "Lifting force: " + liftingForce
+print "Supported mass: " + supportedMass
+print "Lift speed: " + liftSpeed
+print "Lift power: " + liftPower

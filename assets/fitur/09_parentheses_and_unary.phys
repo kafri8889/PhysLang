@@ -1,0 +1,11 @@
+// Feature: parentheses and unary minus
+// Parentheses control evaluation order.
+// Unary minus can flip the sign of a physical value.
+
+var leftForce = 20 N
+var rightForce = 15 N
+var netForce = leftForce - rightForce
+
+print "Net force: " + netForce
+print "Opposite force: " + -netForce
+print "Grouped value: " + (2 kg + 3 kg) * 4

@@ -12,6 +12,7 @@ class Environment(private val parent: Environment? = null) {
         // Register native built-in functions
         if (parent == null) {
             symbolTable["SI"] = RuntimeValue.NativeFunction("SI", SIFunction())
+            symbolTable["sqrt"] = RuntimeValue.NativeFunction("sqrt", SqrtFunction())
         }
     }
 

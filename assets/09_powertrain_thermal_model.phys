@@ -1,0 +1,23 @@
+// Powertrain thermal model
+// Torque and rotational speed are converted into mechanical power and heat load.
+
+unit rpm = 1 / 60 s
+unit torqueUnit = N * m
+unit heatCapacityWater = 4186 J / kg / K
+
+var engineTorque = 320 torqueUnit
+var engineSpeed = 3000 rpm
+var thermalLossFraction = 0.18
+var coolantMass = 5 kg
+var simulationTime = 10 s
+
+var mechanicalPower = engineTorque * engineSpeed
+var heatRate = mechanicalPower * thermalLossFraction
+var heatEnergy = heatRate * simulationTime
+var coolantTemperatureRise = heatEnergy / coolantMass / heatCapacityWater
+
+print "Engine speed in SI: " + SI(engineSpeed)
+print "Mechanical power: " + mechanicalPower
+print "Heat rate: " + heatRate
+print "Heat energy: " + heatEnergy
+print "Coolant temperature rise: " + coolantTemperatureRise

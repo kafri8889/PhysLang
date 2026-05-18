@@ -1,0 +1,10 @@
+// Feature: power operator
+// The ^ operator raises a physical value to an integer power.
+// This is useful for formulas such as kinetic energy.
+
+var mass = 4 kg
+var velocity = 3 m / s
+var kineticEnergy = 0.5 * mass * velocity^2
+
+print "Velocity squared: " + velocity^2
+print "Kinetic energy: " + kineticEnergy

@@ -1,0 +1,11 @@
+// Feature: function call
+// Native functions are written in Kotlin and called from PhysLang.
+// SI is a native function.
+
+unit hourSpeed = 1000 m / 1 h
+
+var speed = 90 hourSpeed
+var baseSpeed = SI(speed)
+
+print "Original speed: " + speed
+print "Converted speed: " + baseSpeed

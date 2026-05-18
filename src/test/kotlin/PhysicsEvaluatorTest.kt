@@ -1,21 +1,32 @@
 
 import lang.ast.PhysicsValue
 import lang.ast.visitors.PhysicsEvaluator
+import lang.core.Environment
+import lang.error.ErrorReporter
 import lang.lexer.Lexer
 import lang.parser.Parser
+import lang.semantic.SemanticAnalyzer
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 
 class PhysicsEvaluatorTest {
 
     private fun executeCode(sourceCode: String): PhysicsValue {
         val tokens = Lexer(sourceCode).lex()
-        val parser = Parser(tokens)
+        val errorReporter = ErrorReporter()
+        val parser = Parser(tokens, errorReporter)
         val ast = parser.parseExpression() ?: throw Exception("Parser return null!")
 
-        val evaluator = PhysicsEvaluator()
+        assertFalse(errorReporter.hasErrors(), "Parser reported errors: ${errorReporter.errors}")
+
+        val environment = Environment()
+        val analyzer = SemanticAnalyzer(environment, errorReporter)
+        ast.accept(analyzer)
+
+        assertFalse(errorReporter.hasErrors(), "Semantic analyzer reported errors: ${errorReporter.errors}")
+
+        val evaluator = PhysicsEvaluator(environment)
         return ast.accept(evaluator) as PhysicsValue
     }
 
@@ -50,32 +61,6 @@ class PhysicsEvaluatorTest {
         // Ekspektasi Vektor Dimensi: [1, 1, -2, 0, 0, 0, 0] (kg * m / s^2)
         val expectedVector = intArrayOf(1, 1, -2, 0, 0, 0, 0)
         assertArrayEquals(expectedVector, result.dimensions, "Vektor satuan fisika tidak cocok (Bukan Newton)")
-    }
-
-    // ==========================================
-    // TIER 3: NEGATIVE TESTING (PENGUJIAN KEGAGALAN)
-    // ==========================================
-    // Ingat: Sistem yang baik harus tahu kapan ia harus menolak komputasi ilegal!
-
-    @Test
-    @DisplayName("Harus CRASH (melempar Exception) jika dimensi ditambah secara ilegal")
-    fun testSemanticErrorOnInvalidAddition() {
-        // Kita memerintahkan JUnit untuk mengekspektasikan terjadinya Exception
-        val exception = assertThrows<Exception> {
-            executeCode("5 kg + 10 m")
-        }
-
-        // Validasi pesan error dari kompilator Anda
-        assertTrue(exception.message!!.contains("Dimensi"), "Pesan error tidak menjelaskan masalah dimensi")
-    }
-
-    @Test
-    @DisplayName("Harus CRASH pada operasi gabungan yang menghasilkan dimensi ilegal")
-    fun testSemanticErrorOnComplexMismatch() {
-        assertThrows<Exception>("Kompilator gagal mendeteksi waktu ditambah jarak") {
-            // 10 * 2m = 20m. 20m + 5s = ILEGAL!
-            executeCode("10 * 2 m + 5 s")
-        }
     }
 
     // ==========================================
@@ -127,16 +112,4 @@ class PhysicsEvaluatorTest {
         assertArrayEquals(expectedVector, result.dimensions, "Gagal membatalkan dimensi pembagian!")
     }
 
-    @Test
-    @DisplayName("Harus melempar Exception dari dalam Node yang paling dalam (Error Bubbling)")
-    fun testDeepNestedSemanticError() {
-        // Error tidak terjadi di luar, tapi jauh di dalam tanda kurung.
-        // Kompilator harus mendeteksinya sebelum mencoba mengalikannya dengan 10 kg.
-        val exception = assertThrows<Exception>("Kompilator gagal mendeteksi error di dalam kurung") {
-            executeCode("10 kg * (5 m + 2 s)")
-        }
-
-        assertTrue(exception.message!!.contains("mismatch", ignoreCase = true) ||
-                exception.message!!.contains("Dimensi", ignoreCase = true))
-    }
 }

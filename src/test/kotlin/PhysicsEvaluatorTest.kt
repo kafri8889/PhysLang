@@ -112,4 +112,24 @@ class PhysicsEvaluatorTest {
         assertArrayEquals(expectedVector, result.dimensions, "Gagal membatalkan dimensi pembagian!")
     }
 
+    @Test
+    @DisplayName("Harus menangani satuan bawaan baru (Mekanika, Listrik, dan Sudut)")
+    fun testExtendedBuiltinUnits() {
+        // Gaya: 2 kN + 500 N = 2500 N
+        val force = executeCode("2 kN + 500 N")
+        assertEquals(2500.0, force.scaledValue, 0.0001)
+        assertArrayEquals(intArrayOf(1, 1, -2, 0, 0, 0, 0), force.dimensions)
+
+        // Energi: 1 cal = 4.184 J
+        val energy = executeCode("10 cal")
+        assertEquals(41.84, energy.scaledValue, 0.0001)
+        assertArrayEquals(intArrayOf(1, 2, -2, 0, 0, 0, 0), energy.dimensions)
+
+        // Hambatan: V / A = ohm
+        val resistance = executeCode("10 V / 2 A")
+        assertEquals(5.0, resistance.scaledValue, 0.0001)
+        assertArrayEquals(intArrayOf(1, 2, -3, -2, 0, 0, 0), resistance.dimensions)
+    }
+
 }
+

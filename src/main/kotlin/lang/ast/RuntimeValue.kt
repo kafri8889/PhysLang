@@ -126,17 +126,58 @@ data class PhysicsValue(
             // ======================
             // Mechanics
             // ======================
-            "N" to PhysicsValue(1.0, intArrayOf(1,1,-2,0,0,0,0), 1.0),  // Newton
+            "N" to PhysicsValue(1.0, intArrayOf(1,1,-2,0,0,0,0), 1.0),   // Newton
             "Pa" to PhysicsValue(1.0, intArrayOf(1,-1,-2,0,0,0,0), 1.0), // Pascal
-            "J" to PhysicsValue(1.0, intArrayOf(1,2,-2,0,0,0,0), 1.0),  // Joule
-            "W" to PhysicsValue(1.0, intArrayOf(1,2,-3,0,0,0,0), 1.0),  // Watt
+            "J" to PhysicsValue(1.0, intArrayOf(1,2,-2,0,0,0,0), 1.0),   // Joule
+            "W" to PhysicsValue(1.0, intArrayOf(1,2,-3,0,0,0,0), 1.0),   // Watt
+
+            "kN" to PhysicsValue(1.0, intArrayOf(1,1,-2,0,0,0,0), 1000.0),
+            "kPa" to PhysicsValue(1.0, intArrayOf(1,-1,-2,0,0,0,0), 1000.0),
+            "MPa" to PhysicsValue(1.0, intArrayOf(1,-1,-2,0,0,0,0), 1e6),
+            "bar" to PhysicsValue(1.0, intArrayOf(1,-1,-2,0,0,0,0), 100000.0),
+            "atm" to PhysicsValue(1.0, intArrayOf(1,-1,-2,0,0,0,0), 101325.0),
+
+            "kJ" to PhysicsValue(1.0, intArrayOf(1,2,-2,0,0,0,0), 1000.0),
+            "MJ" to PhysicsValue(1.0, intArrayOf(1,2,-2,0,0,0,0), 1e6),
+            "cal" to PhysicsValue(1.0, intArrayOf(1,2,-2,0,0,0,0), 4.184),
+            "kcal" to PhysicsValue(1.0, intArrayOf(1,2,-2,0,0,0,0), 4184.0),
+            "eV" to PhysicsValue(1.0, intArrayOf(1,2,-2,0,0,0,0), 1.602176634e-19),
+            "kWh" to PhysicsValue(1.0, intArrayOf(1,2,-2,0,0,0,0), 3.6e6),
+
+            "kW" to PhysicsValue(1.0, intArrayOf(1,2,-3,0,0,0,0), 1000.0),
+            "MW" to PhysicsValue(1.0, intArrayOf(1,2,-3,0,0,0,0), 1e6),
+            "mW" to PhysicsValue(1.0, intArrayOf(1,2,-3,0,0,0,0), 1e-3),
 
             // ======================
-            // Electricity
+            // Electromagnetism
             // ======================
-            "C" to PhysicsValue(1.0, intArrayOf(0,0,1,1,0,0,0), 1.0),   // Coulomb
-            "V" to PhysicsValue(1.0, intArrayOf(1,2,-3,-1,0,0,0), 1.0), // Volt
-            "Ω" to PhysicsValue(1.0, intArrayOf(1,2,-3,-2,0,0,0), 1.0)  // Ohm
+            "C" to PhysicsValue(1.0, intArrayOf(0,0,1,1,0,0,0), 1.0),    // Coulomb
+            "V" to PhysicsValue(1.0, intArrayOf(1,2,-3,-1,0,0,0), 1.0),  // Volt
+            "Ω" to PhysicsValue(1.0, intArrayOf(1,2,-3,-2,0,0,0), 1.0),  // Ohm
+            "ohm" to PhysicsValue(1.0, intArrayOf(1,2,-3,-2,0,0,0), 1.0), // Ohm alias
+            "F" to PhysicsValue(1.0, intArrayOf(-1,-2,4,2,0,0,0), 1.0),  // Farad
+            "H" to PhysicsValue(1.0, intArrayOf(1,2,-2,-2,0,0,0), 1.0),  // Henry
+            "T" to PhysicsValue(1.0, intArrayOf(1,0,-2,-1,0,0,0), 1.0),  // Tesla
+            "Wb" to PhysicsValue(1.0, intArrayOf(1,2,-2,-1,0,0,0), 1.0), // Weber
+            "S" to PhysicsValue(1.0, intArrayOf(-1,-2,3,2,0,0,0), 1.0),  // Siemens
+
+            "mA" to PhysicsValue(1.0, intArrayOf(0,0,0,1,0,0,0), 1e-3),
+            "µA" to PhysicsValue(1.0, intArrayOf(0,0,0,1,0,0,0), 1e-6),
+            "mV" to PhysicsValue(1.0, intArrayOf(1,2,-3,-1,0,0,0), 1e-3),
+            "kV" to PhysicsValue(1.0, intArrayOf(1,2,-3,-1,0,0,0), 1000.0),
+            "kΩ" to PhysicsValue(1.0, intArrayOf(1,2,-3,-2,0,0,0), 1000.0),
+            "MΩ" to PhysicsValue(1.0, intArrayOf(1,2,-3,-2,0,0,0), 1e6),
+            "µF" to PhysicsValue(1.0, intArrayOf(-1,-2,4,2,0,0,0), 1e-6),
+            "nF" to PhysicsValue(1.0, intArrayOf(-1,-2,4,2,0,0,0), 1e-9),
+            "pF" to PhysicsValue(1.0, intArrayOf(-1,-2,4,2,0,0,0), 1e-12),
+            "mH" to PhysicsValue(1.0, intArrayOf(1,2,-2,-2,0,0,0), 1e-3),
+            "µH" to PhysicsValue(1.0, intArrayOf(1,2,-2,-2,0,0,0), 1e-6),
+
+            // ======================
+            // Angle (Dimensionless)
+            // ======================
+            "rad" to PhysicsValue(1.0, emptyDimensions, 1.0),
+            "deg" to PhysicsValue(1.0, emptyDimensions, Math.PI / 180.0)
         )
     }
 }

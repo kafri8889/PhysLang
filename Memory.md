@@ -67,6 +67,16 @@ Built-in unit definitions live in `PhysicsValue.unitRegistry`. The evaluator als
 - Tests should emphasize correct dimensional behavior and explicit failure cases.
 - If DSL examples mention `toBase(x)`, remember that the current implementation uses `SI(x)`; rename deliberately and consistently if the DSL surface changes.
 
+## Domain-Specific Feature Roadmap (Novelty & Utility Ideas)
+
+1. **Physical Constants Registry**: Built-in physical constants (`c`, `G`, `h`, `k_B`, `e`, `eps_0`) with their exact SI dimension vectors and values.
+2. **Strictly-Guarded Comparison & Conditionals**: Comparison operators (`==`, `!=`, `<`, `<=`, `>`, `>=`) strictly enforced by `SemanticAnalyzer` to require identical dimension vectors (e.g. `5 m > 2 m` valid, `5 m > 2 kg` rejected).
+3. **Convergence Loop (`converge delta < 0.001 m { ... }`)**: Physics-native loop construct where termination tolerance must strictly match the dimension of the monitored quantity.
+4. **User-Defined Functions & Closures**: Lexically-scoped functions with call frames and return unwinding.
+5. **Dimensional Contracts on Functions**: Function signatures declaring input/output dimension types (e.g. `fun force(m: kg, a: m/s^2) -> N`).
+6. **Uncertainty Propagation**: Quantities with error intervals (`value ± sigma`) evaluated via derivative quadrature.
+7. **Dimensional Inference on ℤ⁷**: Abelian group unification for static dimension checking and inference.
+
 ## Useful Commands
 
 Run all tests:

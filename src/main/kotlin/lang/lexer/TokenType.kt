@@ -28,6 +28,7 @@ enum class TokenType {
 
     Val,
     Var,
+    Null,
     Assign,
     PlusAssign,
     MinusAssign,

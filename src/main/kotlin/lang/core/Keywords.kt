@@ -9,4 +9,5 @@ val keywords = buildMap {
     put("false", TokenType.False)
     put("print", TokenType.Print)
     put("unit", TokenType.Unit)
+    put("null", TokenType.Null)
 }

@@ -182,4 +182,228 @@ class VariableTest {
 
         assertEquals("4.0 m", runAndGetOutput(script))
     }
+
+    // ==========================================
+    // TIER: ASSIGNMENT AS EXPRESSION
+    // ==========================================
+
+    @Test
+    @DisplayName("Assignment expression menghasilkan nilai yang bisa langsung dicetak (print (a = 10 m))")
+    fun testAssignmentAsPrintableExpression() {
+        val script = """
+            var a
+            print (a = 10 m)
+        """.trimIndent()
+
+        assertEquals("10.0 m", runAndGetOutput(script))
+    }
+
+    @Test
+    @DisplayName("Chained Assignment: memberikan nilai sekaligus ke beberapa variabel (a = b = 25 s)")
+    fun testChainedAssignment() {
+        val script = """
+            var a
+            var b
+            a = b = 25 s
+            print a
+            print b
+        """.trimIndent()
+
+        val expected = """
+            25.0 s
+            25.0 s
+        """.trimIndent()
+
+        assertEquals(expected, runAndGetOutput(script))
+    }
+
+    @Test
+    @DisplayName("Assignment di dalam ekspresi matematika (misal (a = 5 m) + 10 m)")
+    fun testAssignmentEmbeddedInArithmeticExpression() {
+        val script = """
+            var a
+            var result = (a = 5 m) + 10 m
+            print a
+            print result
+        """.trimIndent()
+
+        val expected = """
+            5.0 m
+            15.0 m
+        """.trimIndent()
+
+        assertEquals(expected, runAndGetOutput(script))
+    }
+
+    @Test
+    @DisplayName("Chained Assignment dengan 3 variabel sekaligus (x = y = z = 100 N)")
+    fun testTripleChainedAssignment() {
+        val script = """
+            var x
+            var y
+            var z
+            x = y = z = 100 N
+            print x
+            print y
+            print z
+        """.trimIndent()
+
+        val expected = """
+            100.0 N
+            100.0 N
+            100.0 N
+        """.trimIndent()
+
+        assertEquals(expected, runAndGetOutput(script))
+    }
+
+    // ==========================================
+    // STRESS TESTS & COMPLEX FORMULAS
+    // ==========================================
+
+    @Test
+    @DisplayName("Stress Test: Akumulasi dan mutasi berturut-turut pada variabel yang sama")
+    fun testSelfReferentialAccumulation() {
+        val script = """
+            var x = 10 m
+            x = x + 5 m
+            x = x * 2
+            x = x - 10 m
+            print x
+        """.trimIndent()
+
+        // (10 + 5) * 2 - 10 = 20.0 m
+        assertEquals("20.0 m", runAndGetOutput(script))
+    }
+
+    @Test
+    @DisplayName("Stress Test: Rantai konversi multi-unit (km, m, cm, mm) dijumlahkan ke satu variabel")
+    fun testMultiUnitChainAddition() {
+        val script = """
+            var d1 = 1 km
+            var d2 = 200 m
+            var d3 = 50 cm
+            var d4 = 30 mm
+            var total = d1 + d2 + d3 + d4
+            print total
+        """.trimIndent()
+
+        // 1 km + 0.2 km + 0.0005 km + 0.00003 km = 1.20053 km
+        val output = runAndGetOutput(script)
+        assertTrue(output.startsWith("1.2005"), "Hasil penjumlahan multi-unit harus 1.20053 km, got: $output")
+    }
+
+    @Test
+    @DisplayName("Stress Test: Perhitungan Kinematika GLBB s = v0*t + 0.5*a*t^2")
+    fun testKinematicsFormulaStressTest() {
+        val script = """
+            var v0 = 20 m
+            var t = 5
+            var a = 2 m
+            var dist = (v0 * t) + (0.5 * a * t * t)
+            print dist
+        """.trimIndent()
+
+        // (20 * 5) + (0.5 * 2 * 25) = 100 + 25 = 125.0 m
+        assertEquals("125.0 m", runAndGetOutput(script))
+    }
+
+    @Test
+    @DisplayName("Stress Test: Hukum Kekekalan Energi Mekanik (Ep + Ek)")
+    fun testMechanicalEnergyFormula() {
+        val script = """
+            var m = 2 kg
+            var g = 9.8 m / s^2
+            var h = 10 m
+            var v = 10 m / s
+            var ep = m * g * h
+            var ek = 0.5 * m * (v ^ 2)
+            var em = ep + ek
+            print em
+        """.trimIndent()
+
+        // Ep = 2 * 9.8 * 10 = 196 J
+        // Ek = 0.5 * 2 * 100 = 100 J
+        // Em = 296 J (kg*m^2*s^-2)
+        val output = runAndGetOutput(script)
+        assertTrue(output.contains("296.0"), "Hasil energi mekanik harus 296.0 J")
+    }
+
+    @Test
+    @DisplayName("Stress Test: Assignment bersarang di dalam operasi pembagian dan penjumlahan")
+    fun testNestedAssignmentInDivision() {
+        val script = """
+            var p
+            var q
+            var velocity = ((p = 20 m) + (q = 30 m)) / 5 s
+            print p
+            print q
+            print velocity
+        """.trimIndent()
+
+        val expected = """
+            50.0 m
+            30.0 m
+            10.0 m*s^-1
+        """.trimIndent()
+
+        // p bernilai total ekspresi p = 20 m, lalu diuji
+        val output = runAndGetOutput(script)
+        assertTrue(output.contains("10.0"), "Velocity harus 10.0 m*s^-1")
+    }
+
+    @Test
+    @DisplayName("Stress Test: Rantai 10 variabel saling bergantungan (Cascading Variables)")
+    fun testCascadingTenVariables() {
+        val script = """
+            var v1 = 1 m
+            var v2 = v1 + 1 m
+            var v3 = v2 + 1 m
+            var v4 = v3 + 1 m
+            var v5 = v4 + 1 m
+            var v6 = v5 + 1 m
+            var v7 = v6 + 1 m
+            var v8 = v7 + 1 m
+            var v9 = v8 + 1 m
+            var v10 = v9 + 1 m
+            print v10
+        """.trimIndent()
+
+        assertEquals("10.0 m", runAndGetOutput(script))
+    }
+
+    @Test
+    @DisplayName("Stress Error: Menolak assignment ke ekspresi biner bukan L-value ((a + 5 m) = 10 m)")
+    fun testRejectInvalidAssignmentTargetBinaryExpr() {
+        val script = """
+            var a = 2 m
+            (a + 5 m) = 10 m
+        """.trimIndent()
+
+        val output = runAndGetOutput(script)
+        assertTrue(output.contains("ERROR"), "Harus menolak penugasan ke target non-identifier")
+    }
+
+    @Test
+    @DisplayName("Stress Error: Menolak assignment langsung ke angka literal (5 = 10 m)")
+    fun testRejectAssignmentToLiteralNumber() {
+        val script = """
+            5 = 10 m
+        """.trimIndent()
+
+        val output = runAndGetOutput(script)
+        assertTrue(output.contains("ERROR"), "Harus menolak penugasan ke angka literal")
+    }
+
+    @Test
+    @DisplayName("Stress Error: Menolak variabel yang menginisialisasi dirinya sendiri sebelum selesai (var a = a + 5 m)")
+    fun testRejectSelfReferencingInitialization() {
+        val script = """
+            var a = a + 5 m
+        """.trimIndent()
+
+        val output = runAndGetOutput(script)
+        assertTrue(output.contains("ERROR"), "Harus menolak variabel yang belum terdefinisi saat inisialisasi")
+    }
 }
+

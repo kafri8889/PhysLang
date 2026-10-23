@@ -96,9 +96,7 @@ class PhysicsEvaluator(
     }
 
     override fun visitUnaryExpr(expr: UnaryExpr): RuntimeValue {
-        val right = expr.right.accept(this)
-
-        when (right) {
+        when (val right = expr.right.accept(this)) {
             is PhysicsValue -> return PhysicsValue(
                 value = if (expr.operator == TokenType.Minus) -right.value else right.value,
                 dimensions = right.dimensions,
@@ -113,6 +111,7 @@ class PhysicsEvaluator(
         val value = when (val literal = literal.value) {
             is LiteralValue.IntVal -> literal.value.toDouble()
             is LiteralValue.DoubleVal -> literal.value
+            is LiteralValue.NullVal -> return RuntimeValue.NullValue
             else -> 0.0
         }
 
@@ -148,8 +147,11 @@ class PhysicsEvaluator(
     }
 
     override fun visitVariableExpr(expr: VariableExpr): RuntimeValue {
-        val value = currentEnvironment.getVar(expr.name)
+        val value = currentEnvironment.getVar(expr.name, true)
         if (value != null) return value
+
+        val hasVar = currentEnvironment.hasVar(expr.name)
+        if (hasVar) return RuntimeValue.NullValue
 
         val customUnit = currentEnvironment.getUnit(expr.name)
         if (customUnit is PhysicsValue) {

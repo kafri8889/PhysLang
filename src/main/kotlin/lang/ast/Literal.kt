@@ -22,6 +22,10 @@ sealed interface LiteralValue {
         val value: Boolean get() = valueToken.value.toBoolean()
     }
 
+    data class NullVal(override val valueToken: Token) : LiteralValue {
+        val value: Nothing? get() = null
+    }
+
 }
 
 data class LiteralExpr(

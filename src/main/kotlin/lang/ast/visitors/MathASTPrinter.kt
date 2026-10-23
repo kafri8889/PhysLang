@@ -37,6 +37,7 @@ class MathASTPrinter : ExprVisitor<String> {
             is LiteralValue.DoubleVal -> value.value.toString()
             is LiteralValue.BoolVal -> value.value.toString()
             is LiteralValue.StringVal -> value.value
+            is LiteralValue.NullVal -> "null"
         }
     }
 

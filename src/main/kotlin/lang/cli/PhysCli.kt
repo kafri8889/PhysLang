@@ -56,7 +56,7 @@ class PhysCli(
             if (input.isBlank()) continue
 
             val tokens = Lexer(input).lex()
-            println(tokens)
+//            println(tokens)
 
             val parser = Parser(tokens, reporter)
 
@@ -66,7 +66,7 @@ class PhysCli(
 //            println(parser2.parseExpression(0)?.accept(evaluator).toString())
 
             val statements = parser.parseProgram()
-            println(statements)
+//            println(statements)
 
             if (reporter.hasErrors()) {
                 reporter.printAll(input)

@@ -7,6 +7,10 @@ import lang.core.Callable
  */
 sealed interface RuntimeValue {
     data class NativeFunction(val name: String, val callable: Callable) : RuntimeValue
+
+    object NullValue : RuntimeValue {
+        override fun toString(): String = "null"
+    }
 }
 
 data class PhysicsValue(

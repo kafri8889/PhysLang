@@ -8,18 +8,18 @@ class Precedence {
 
         fun fromToken(tokenType: TokenType?): Int {
             return when (tokenType) {
-                TokenType.OpenParenthesis -> 100
-                TokenType.Assign -> 5
-                TokenType.PlusAssign -> 5
-                TokenType.MinusAssign -> 5
-                TokenType.MultiplyAssign -> 5
-                TokenType.DivideAssign -> 5
-                TokenType.Plus -> 10
-                TokenType.Minus -> 10
-                TokenType.Multiply -> 20
-                TokenType.Divide -> 20
-                TokenType.Power -> 30
-                TokenType.Unary -> 40
+                TokenType.OpenParenthesis -> 6
+                TokenType.Assign -> 1
+                TokenType.PlusAssign -> 1
+                TokenType.MinusAssign -> 1
+                TokenType.MultiplyAssign -> 1
+                TokenType.DivideAssign -> 1
+                TokenType.Plus -> 2
+                TokenType.Minus -> 2
+                TokenType.Multiply -> 3
+                TokenType.Divide -> 3
+                TokenType.Power -> 4
+                TokenType.Unary -> 5
                 else -> 0
             }
         }

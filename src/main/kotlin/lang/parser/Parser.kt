@@ -14,14 +14,15 @@ class Parser(
 
     private var currentTokenIndex = 0
 
+    private fun isSeparator(token: TokenType?): Boolean {
+        return token == TokenType.Eol || token == TokenType.Eof || token == TokenType.Comment
+    }
+
     /**
      * Skip eol and comment
      */
     private fun skipSeparators() {
-        while (
-            peek()?.tokenType == TokenType.Eol ||
-            peek()?.tokenType == TokenType.Comment
-        ) {
+        while (isSeparator(peek()?.tokenType)) {
             advance()
         }
     }
@@ -40,6 +41,13 @@ class Parser(
      */
     fun peek(): Token? {
         return tokens.getOrNull(currentTokenIndex)
+    }
+
+    /**
+     * Intip next token without consume it
+     */
+    fun lookup(): Token? {
+        return tokens.getOrNull(currentTokenIndex + 1)
     }
 
     /**
@@ -108,6 +116,9 @@ class Parser(
             TokenType.StringLiteral -> {
                 StringLiteralExpr(token.value)
             }
+            TokenType.Null -> {
+                LiteralExpr(LiteralValue.NullVal(token))
+            }
             else -> null
         }
     }
@@ -116,7 +127,7 @@ class Parser(
         return when (token.tokenType) {
             TokenType.Assign -> {
                 if (left is VariableExpr) {
-                    val right = parseExpression(Precedence.fromToken(token.tokenType)) ?: return null
+                    val right = parseExpression(Precedence.fromToken(token.tokenType) - 1) ?: return null
 
                     AssignExpr(left.nameToken, right)
                 } else {
@@ -336,33 +347,35 @@ class Parser(
             return null
         }
 
-        val assign = advance()
-        if (assign?.tokenType != TokenType.Assign) {
-            reporter.report(
-                Diagnostic(
-                    message = "Expected '=' after var name",
-                    type = DiagnosticType.ERROR,
-                    line = name.line,
-                    column = name.startColumn until name.endColumn
+        if (peek()?.tokenType == TokenType.Assign) {
+            val assign = advance()!!
+
+            val initializer = parseExpression(0)
+            if (initializer == null) {
+                reporter.report(
+                    Diagnostic(
+                        message = "Expected expression after '=' in var declaration",
+                        type = DiagnosticType.ERROR,
+                        line = assign.line,
+                        column = assign.startColumn until assign.endColumn
+                    )
                 )
-            )
-            return null
+                return null
+            }
+
+            return VarDeclStmt(name, initializer)
         }
 
-        val initializer = parseExpression(0)
-        if (initializer == null) {
-            reporter.report(
-                Diagnostic(
-                    message = "Expected expression after '=' in var declaration",
-                    type = DiagnosticType.ERROR,
-                    line = assign.line,
-                    column = assign.startColumn until assign.endColumn
-                )
-            )
-            return null
+        val currTok = peek()
+
+        if (isSeparator(currTok?.tokenType)) {
+            // Advance separator
+            advance()
+
+            return VarDeclStmt(name, null)
         }
 
-        return VarDeclStmt(name, initializer)
+        return null
     }
 
     fun parseUnitDecl(): Stmt? {

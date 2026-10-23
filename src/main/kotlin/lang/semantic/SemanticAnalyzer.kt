@@ -17,13 +17,25 @@ class SemanticAnalyzer(
     private var currentEnvironment = environment
 
     private fun dimensionEquals(left: IntArray, right: IntArray): Boolean {
-        return if (right.all { it == 0 }) true // Scalar
-        else left.contentEquals(right)
+        return right.all { it == 0 } || left.contentEquals(right) // Scalar
     }
 
     override fun visitBinaryExpr(expr: BinaryExpr): SemanticType {
         val left = expr.left.accept(this)
         val right = expr.right.accept(this)
+
+        if (left is SemanticType.NullValue || right is SemanticType.NullValue) {
+            reporter.report(
+                Diagnostic(
+                    message = "Operator '${expr.operatorToken.value}' cannot be applied to null operand.",
+                    type = DiagnosticType.ERROR,
+                    line = expr.operatorToken.line,
+                    column = expr.operatorToken.startColumn until expr.operatorToken.endColumn
+                )
+            )
+
+            return SemanticType.Unknown
+        }
 
         return when (expr.operator) {
             TokenType.Plus,
@@ -57,10 +69,24 @@ class SemanticAnalyzer(
                             column = expr.operatorToken.startColumn until expr.operatorToken.endColumn
                         )
                     )
+
                     return SemanticType.Unknown
                 }
 
-                SemanticType.Unknown
+                if (left is SemanticType.Unknown || right is SemanticType.Unknown) {
+                    return SemanticType.Unknown
+                }
+
+                reporter.report(
+                    Diagnostic(
+                        message = "Operator '${expr.operatorToken.value}' cannot be applied to operands of type '$left' and '$right'.",
+                        type = DiagnosticType.ERROR,
+                        line = expr.operatorToken.line,
+                        column = expr.operatorToken.startColumn until expr.operatorToken.endColumn
+                    )
+                )
+
+                return SemanticType.Unknown
             }
             TokenType.Multiply -> {
                 if (left !is SemanticType.PhysicsValue || right !is SemanticType.PhysicsValue) {
@@ -163,14 +189,16 @@ class SemanticAnalyzer(
     }
 
     override fun visitUnaryExpr(expr: UnaryExpr): SemanticType {
-        val right = expr.right.accept(this)
-
-        when (right) {
+        when (val right = expr.right.accept(this)) {
             is SemanticType.PhysicsValue -> return right
             else -> {
+                val message = if (right is SemanticType.NullValue) {
+                    "Operation (\"${expr.operator.name}\") can't be applied to null value!"
+                } else "Operation (\"${expr.operator.name}\") can't be applied to ${right}!"
+
                 reporter.report(
                     Diagnostic(
-                        message = "Operation (\"${expr.operator}\") can't be applied to ${right}!",
+                        message = message,
                         type = DiagnosticType.ERROR,
                         line = expr.operatorToken.line,
                         column = expr.operatorToken.startColumn until expr.operatorToken.endColumn
@@ -186,6 +214,7 @@ class SemanticAnalyzer(
         val value = when (val literal = literal.value) {
             is LiteralValue.IntVal -> literal.value.toDouble()
             is LiteralValue.DoubleVal -> literal.value
+            is LiteralValue.NullVal -> return SemanticType.NullValue
             else -> {
                 reporter.report(
                     Diagnostic(
@@ -267,7 +296,7 @@ class SemanticAnalyzer(
     }
 
     override fun visitVariableExpr(expr: VariableExpr): SemanticType {
-        val value = currentEnvironment.getVar(expr.nameToken.value)
+        val value = currentEnvironment.getVar(expr.nameToken.value, true)
         if (value != null) return value.toSemanticType()
 
         val hasVar = currentEnvironment.hasVar(expr.nameToken.value)
@@ -296,9 +325,9 @@ class SemanticAnalyzer(
     }
 
     override fun visitAssignExpr(expr: AssignExpr): SemanticType {
-        expr.value.accept(this)
+        val value = expr.value.accept(this)
 
-        if (currentEnvironment.getVar(expr.nameToken.value) == null) {
+        if (!currentEnvironment.hasVar(expr.nameToken.value)) {
             reporter.report(
                 Diagnostic(
                     message = "Variable '${expr.nameToken.value}' is not defined!",
@@ -311,7 +340,7 @@ class SemanticAnalyzer(
             return SemanticType.Unknown
         }
 
-        return SemanticType.AssignExpr
+        return value
     }
 
     override fun visitStringLiteralExpr(expr: StringLiteralExpr): SemanticType {
@@ -390,9 +419,15 @@ class SemanticAnalyzer(
 
         val exprSemanticType = varDeclStmt.initializer?.accept(this)
 
-        if (exprSemanticType is SemanticType.PhysicsValue) {
-            currentEnvironment.putVar(varDeclStmt.name, exprSemanticType.value)
-        } else currentEnvironment.putVar(varDeclStmt.name, null)
+        if (exprSemanticType is SemanticType.Unknown) {
+            return
+        }
+
+        when (exprSemanticType) {
+            is SemanticType.PhysicsValue -> currentEnvironment.putVar(varDeclStmt.name, exprSemanticType.value)
+            is SemanticType.NullValue, null -> currentEnvironment.putVar(varDeclStmt.name, null)
+            else -> currentEnvironment.putVar(varDeclStmt.name, null)
+        }
     }
 
     override fun visitPrintStmt(printStmt: PrintStmt) {
@@ -443,7 +478,7 @@ class SemanticAnalyzer(
             is PhysicsValue -> SemanticType.PhysicsValue(this)
             is StringValue -> SemanticType.String
             is RuntimeValue.NativeFunction -> SemanticType.NativeFunction(this)
-            else -> SemanticType.Unknown
+            is RuntimeValue.NullValue -> SemanticType.NullValue
         }
     }
 }

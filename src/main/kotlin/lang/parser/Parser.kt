@@ -14,14 +14,59 @@ class Parser(
 
     private var currentTokenIndex = 0
 
+    /**
+     * Skip eol and comment
+     */
+    private fun skipSeparators() {
+        while (
+            peek()?.tokenType == TokenType.Eol ||
+            peek()?.tokenType == TokenType.Comment
+        ) {
+            advance()
+        }
+    }
+
+    /**
+     * Get current token and advance to the next token
+     */
     fun advance(): Token? {
         val tok = peek()
         currentTokenIndex++
         return tok
     }
 
+    /**
+     * Get current token without consume it
+     */
     fun peek(): Token? {
         return tokens.getOrNull(currentTokenIndex)
+    }
+
+    /**
+     * Consume currnet token (peek and advance if current token match [expected])
+     */
+    fun consume(
+        expected: TokenType,
+        message: String
+    ): Token? {
+        val token = peek()
+
+        if (token?.tokenType == expected) {
+            return advance()
+        }
+
+        reporter.report(
+            Diagnostic(
+                type = DiagnosticType.ERROR,
+                message = message,
+                line = token?.line ?: 0,
+                column = token?.let {
+                    it.startColumn..it.endColumn
+                } ?: (0..0)
+            )
+        )
+
+        return null
     }
 
     fun nud(token: Token): Expr? {
@@ -210,10 +255,9 @@ class Parser(
         val statements = mutableListOf<Stmt>()
 
         while (peek() != null && peek()?.tokenType != TokenType.Eof) {
-            if (peek()?.tokenType == TokenType.Eol || peek()?.tokenType == TokenType.Comment) {
-                advance()
-                continue
-            }
+            skipSeparators()
+
+            if (peek()?.tokenType == TokenType.Eof) break
 
             val stmt = parseStatement()
 
@@ -235,8 +279,44 @@ class Parser(
             TokenType.Var -> parseVarDecl()
             TokenType.Print -> parsePrintStmt()
             TokenType.Unit -> parseUnitDecl()
+            TokenType.OpenBracket -> parseBlockStmt()
             else -> parseExprStmt()
         }
+    }
+
+    fun parseBlockStmt(): Stmt? {
+        if (consume(TokenType.OpenBracket, "Expected '{' to start block") == null) {
+            return null
+        }
+
+        val statements = mutableListOf<Stmt>()
+
+        skipSeparators()
+
+        while (
+            peek() != null &&
+            peek()?.tokenType != TokenType.CloseBracket &&
+            peek()?.tokenType != TokenType.Eof
+        ) {
+            val statement = parseStatement()
+
+            skipSeparators()
+
+            if (statement != null) {
+                statements.add(statement)
+            } else {
+                // Prevent an infinite loop if parsing failed
+                advance()
+            }
+
+            skipSeparators()
+        }
+
+        if (consume(TokenType.CloseBracket, "Expected '}' to close block") == null) {
+            return null
+        }
+
+        return BlockStmt(statements)
     }
 
     fun parseVarDecl(): Stmt? {

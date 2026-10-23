@@ -6,6 +6,15 @@ interface Stmt {
     fun <R> accept(stmtVisitor: StmtVisitor<R>): R
 }
 
+/**
+ * Declare new variable
+ *
+ * Example: `var mass = 10 kg`
+ *
+ * @property nameToken Variable name as token
+ * @property initializer Expression yg diassign to variable
+ * @author Anaf
+ */
 data class VarDeclStmt(
     val nameToken: Token,
     val initializer: Expr?
@@ -34,6 +43,12 @@ data class UnitDeclStmt(
 
     override fun <R> accept(stmtVisitor: StmtVisitor<R>): R {
         return stmtVisitor.visitUnitDeclStmt(this)
+    }
+}
+
+data class BlockStmt(val statements: List<Stmt>): Stmt {
+    override fun <R> accept(stmtVisitor: StmtVisitor<R>): R {
+        return stmtVisitor.visitBlockStmt(this)
     }
 }
 

@@ -12,6 +12,10 @@ class SemanticAnalyzer(
     private val reporter: ErrorReporter = ErrorReporter()
 ): ExprVisitor<SemanticType>, StmtVisitor<Unit> {
 
+    // Current active environment, when evaluator enter block expression
+    // Change the environment to new environment (in block)
+    private var currentEnvironment = environment
+
     private fun dimensionEquals(left: IntArray, right: IntArray): Boolean {
         return if (right.all { it == 0 }) true // Scalar
         else left.contentEquals(right)
@@ -205,7 +209,7 @@ class SemanticAnalyzer(
             else -> ""
         }
 
-        var unitScale = environment.getUnit(unitName)
+        var unitScale = currentEnvironment.getUnit(unitName)
 
         if (unitScale == null) {
             unitScale = PhysicsValue.unitRegistry[unitName]
@@ -263,10 +267,13 @@ class SemanticAnalyzer(
     }
 
     override fun visitVariableExpr(expr: VariableExpr): SemanticType {
-        val value = environment.getVar(expr.nameToken.value)
+        val value = currentEnvironment.getVar(expr.nameToken.value)
         if (value != null) return value.toSemanticType()
 
-        val customUnit = environment.getUnit(expr.nameToken.value)
+        val hasVar = currentEnvironment.hasVar(expr.nameToken.value)
+        if (hasVar) return SemanticType.NullValue
+
+        val customUnit = currentEnvironment.getUnit(expr.nameToken.value)
         if (customUnit is PhysicsValue) {
             return SemanticType.PhysicsValue(customUnit)
         }
@@ -291,7 +298,7 @@ class SemanticAnalyzer(
     override fun visitAssignExpr(expr: AssignExpr): SemanticType {
         expr.value.accept(this)
 
-        if (environment.getVar(expr.nameToken.value) == null) {
+        if (currentEnvironment.getVar(expr.nameToken.value) == null) {
             reporter.report(
                 Diagnostic(
                     message = "Variable '${expr.nameToken.value}' is not defined!",
@@ -368,7 +375,7 @@ class SemanticAnalyzer(
     }
 
     override fun visitVarDeclStmt(varDeclStmt: VarDeclStmt) {
-        if (environment.getVar(varDeclStmt.name) != null) {
+        if (currentEnvironment.getVar(varDeclStmt.name) != null) {
             reporter.report(
                 Diagnostic(
                     message = "Conflicting declaration: ${varDeclStmt.name} already defined!",
@@ -377,9 +384,15 @@ class SemanticAnalyzer(
                     column = varDeclStmt.nameToken.startColumn until varDeclStmt.nameToken.endColumn
                 )
             )
+
+            return
         }
 
-        varDeclStmt.initializer?.accept(this)
+        val exprSemanticType = varDeclStmt.initializer?.accept(this)
+
+        if (exprSemanticType is SemanticType.PhysicsValue) {
+            currentEnvironment.putVar(varDeclStmt.name, exprSemanticType.value)
+        } else currentEnvironment.putVar(varDeclStmt.name, null)
     }
 
     override fun visitPrintStmt(printStmt: PrintStmt) {
@@ -400,6 +413,20 @@ class SemanticAnalyzer(
             )
         }
 
+    }
+
+    override fun visitBlockStmt(blockStmt: BlockStmt) {
+        val previousEnvironment = currentEnvironment
+
+        try {
+            currentEnvironment = Environment(previousEnvironment)
+
+            for (stmt in blockStmt.statements) {
+                stmt.accept(this)
+            }
+        } finally {
+            currentEnvironment = previousEnvironment
+        }
     }
 
     private fun physicsType(dimensions: IntArray): SemanticType.PhysicsValue {

@@ -10,4 +10,6 @@ interface StmtVisitor<R> {
 
     fun visitUnitDeclStmt(unitDeclStmt: UnitDeclStmt): R
 
+    fun visitBlockStmt(blockStmt: BlockStmt): R
+
 }

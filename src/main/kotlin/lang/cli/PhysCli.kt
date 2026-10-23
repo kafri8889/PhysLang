@@ -13,6 +13,37 @@ class PhysCli(
     private val args: Array<String> = emptyArray()
 ) {
 
+    private fun readInput(): String? {
+        val buffer = StringBuilder()
+        var openBraces = 0
+
+        while (true) {
+            val prompt = if (buffer.isEmpty()) ">>> " else "... "
+            print(prompt)
+
+            val line = readlnOrNull() ?: return null
+            if (buffer.isEmpty() && line.equals("exit", ignoreCase = true)) {
+                return "exit"
+            }
+
+            buffer.append(line).append("\n")
+
+            for (char in line) {
+                when (char) {
+                    '{' -> openBraces++
+                    '}' -> openBraces--
+                }
+            }
+
+            // if semua block closed (balance <= 0), stop read
+            if (openBraces <= 0) {
+                break
+            }
+        }
+
+        return buffer.toString().trim()
+    }
+
     fun run() {
         println()
         println("PhysLang CLI")
@@ -20,12 +51,12 @@ class PhysCli(
         while (true) {
             reporter.clear()
 
-            print(">>> ")
-            val input = readlnOrNull() ?: break
+            val input = readInput() ?: break
             if (input.equals("exit", true)) break
+            if (input.isBlank()) continue
 
             val tokens = Lexer(input).lex()
-//            println(tokens)
+            println(tokens)
 
             val parser = Parser(tokens, reporter)
 
@@ -35,6 +66,7 @@ class PhysCli(
 //            println(parser2.parseExpression(0)?.accept(evaluator).toString())
 
             val statements = parser.parseProgram()
+            println(statements)
 
             if (reporter.hasErrors()) {
                 reporter.printAll(input)

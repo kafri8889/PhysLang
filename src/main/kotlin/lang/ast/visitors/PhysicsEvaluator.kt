@@ -9,6 +9,10 @@ class PhysicsEvaluator(
     private val environment: Environment = Environment()
 ): ExprVisitor<RuntimeValue>, StmtVisitor<Unit> {
 
+    // Current active environment, when evaluator enter block expression
+    // Change the environment to new environment (in block)
+    private var currentEnvironment = environment
+
     override fun visitBinaryExpr(expr: BinaryExpr): RuntimeValue {
         val left = expr.left.accept(this)
         val right = expr.right.accept(this)
@@ -125,7 +129,7 @@ class PhysicsEvaluator(
             else -> ""
         }
 
-        var unitScale = environment.getUnit(unitName)
+        var unitScale = currentEnvironment.getUnit(unitName)
 
         if (unitScale == null) {
             unitScale = PhysicsValue.unitRegistry[unitName]
@@ -144,10 +148,10 @@ class PhysicsEvaluator(
     }
 
     override fun visitVariableExpr(expr: VariableExpr): RuntimeValue {
-        val value = environment.getVar(expr.name)
+        val value = currentEnvironment.getVar(expr.name)
         if (value != null) return value
 
-        val customUnit = environment.getUnit(expr.name)
+        val customUnit = currentEnvironment.getUnit(expr.name)
         if (customUnit is PhysicsValue) {
             return PhysicsValue(
                 value = 1.0,
@@ -173,7 +177,7 @@ class PhysicsEvaluator(
     override fun visitAssignExpr(expr: AssignExpr): RuntimeValue {
         val value = expr.value.accept(this)
 
-        environment.putVar(expr.name, value)
+        currentEnvironment.putVar(expr.name, value)
 
         return value
     }
@@ -201,7 +205,7 @@ class PhysicsEvaluator(
     override fun visitVarDeclStmt(varDeclStmt: VarDeclStmt) {
         val value = varDeclStmt.initializer?.accept(this)
 
-        environment.putVar(varDeclStmt.name, value)
+        currentEnvironment.putVar(varDeclStmt.name, value)
     }
 
     override fun visitPrintStmt(printStmt: PrintStmt) {
@@ -213,6 +217,21 @@ class PhysicsEvaluator(
     override fun visitUnitDeclStmt(unitDeclStmt: UnitDeclStmt) {
         val value = unitDeclStmt.initializer.accept(this)
 
-        if (value is PhysicsValue) environment.putUnit(unitDeclStmt.name, value)
+        if (value is PhysicsValue) currentEnvironment.putUnit(unitDeclStmt.name, value)
+    }
+
+    override fun visitBlockStmt(blockStmt: BlockStmt) {
+
+        val previousEnvironment = currentEnvironment
+
+        try {
+            currentEnvironment = Environment(previousEnvironment)
+
+            for (stmt in blockStmt.statements) {
+                stmt.accept(this)
+            }
+        } finally {
+            currentEnvironment = previousEnvironment
+        }
     }
 }

@@ -57,9 +57,9 @@ class QuantityExpr(
 }
 
 /**
- * Declare new variable
  *
- * Example: `var mass = 10 kg`
+ *
+ * Example: `mass + 10 kg`
  *
  * @property nameToken Variable name as token
  * @author Anaf

@@ -133,7 +133,7 @@ AST definitions live in `src/main/kotlin/lang/ast`. Important nodes include:
 - `UnaryExpr`
 - `LiteralExpr`
 - `QuantityExpr`
-- `VariableExpr`
+- `IdentifierExpr`
 - `AssignExpr`
 - `CallExpr`
 - `VarDeclStmt`

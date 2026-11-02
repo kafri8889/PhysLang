@@ -10,7 +10,7 @@ interface ExprVisitor<R> {
 
     fun visitQuantityExpr(expr: QuantityExpr): R
 
-    fun visitVariableExpr(expr: VariableExpr): R
+    fun visitIdentifierExpr(expr: IdentifierExpr): R
 
     fun visitAssignExpr(expr: AssignExpr): R
 

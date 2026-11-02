@@ -27,7 +27,7 @@ class SemanticAnalyzer(
         if (left is SemanticType.NullValue || right is SemanticType.NullValue) {
             reporter.report(
                 Diagnostic(
-                    message = "Operator '${expr.operatorToken.value}' cannot be applied to null operand.",
+                    message = "Operator '${expr.operatorToken.value}' cannot be applied to null operand ().",
                     type = DiagnosticType.ERROR,
                     line = expr.operatorToken.line,
                     column = expr.operatorToken.startColumn until expr.operatorToken.endColumn
@@ -295,7 +295,7 @@ class SemanticAnalyzer(
         return SemanticType.Unknown
     }
 
-    override fun visitVariableExpr(expr: VariableExpr): SemanticType {
+    override fun visitIdentifierExpr(expr: IdentifierExpr): SemanticType {
         val value = currentEnvironment.getVar(expr.nameToken.value, true)
         if (value != null) return value.toSemanticType()
 
@@ -328,6 +328,16 @@ class SemanticAnalyzer(
         val value = expr.value.accept(this)
 
         if (!currentEnvironment.hasVar(expr.nameToken.value)) {
+            if (value !is SemanticType.Unknown) {
+                when (value) {
+                    is SemanticType.PhysicsValue -> currentEnvironment.putVar(expr.nameToken.value, value.value)
+                    is SemanticType.NullValue -> currentEnvironment.putVar(expr.nameToken.value, null)
+                    else -> currentEnvironment.putVar(expr.nameToken.value, null)
+                }
+
+                return value
+            }
+
             reporter.report(
                 Diagnostic(
                     message = "Variable '${expr.nameToken.value}' is not defined!",
@@ -338,6 +348,12 @@ class SemanticAnalyzer(
             )
 
             return SemanticType.Unknown
+        }
+
+        when (value) {
+            is SemanticType.PhysicsValue -> currentEnvironment.putVar(expr.nameToken.value, value.value)
+            is SemanticType.NullValue -> currentEnvironment.putVar(expr.nameToken.value, null)
+            else -> currentEnvironment.putVar(expr.nameToken.value, null)
         }
 
         return value

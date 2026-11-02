@@ -39,7 +39,7 @@ class BlockStatementTest {
     fun testBasicBlockExecution() {
         val script = """
             {
-                var a = 2 km + 10 m
+                a = 2 km + 10 m
                 print a
             }
         """.trimIndent()
@@ -52,9 +52,9 @@ class BlockStatementTest {
     @DisplayName("Blok bersarang (Nested Block) dapat membaca variabel dari scope luar (Parent Scope)")
     fun testNestedBlockReadOuterScope() {
         val script = """
-            var outer = 50 N
+            outer = 50 N
             {
-                var inner = 20 N
+                inner = 20 N
                 print outer + inner
             }
         """.trimIndent()
@@ -67,7 +67,7 @@ class BlockStatementTest {
     fun testBlockScopeIsolation() {
         val script = """
             {
-                var insideOnly = 100 J
+                insideOnly = 100 J
             }
             print insideOnly
         """.trimIndent()
@@ -80,11 +80,11 @@ class BlockStatementTest {
     @DisplayName("Blok bertingkat (Nested Block) dapat melakukan isolasi variabel dan perhitungan berlapis")
     fun testNestedBlockIsolation() {
         val script = """
-            var base = 10 m
+            base = 10 m
             {
-                var step = 5 m
+                step = 5 m
                 {
-                    var extra = 2 m
+                    extra = 2 m
                     print base + step + extra
                 }
             }
@@ -98,7 +98,7 @@ class BlockStatementTest {
     fun testBlockLocalModification() {
         val script = """
             {
-                var count = 10 s
+                count = 10 s
                 count = count + 5 s
                 print count
             }
@@ -132,7 +132,7 @@ class BlockStatementTest {
     @DisplayName("Blok dapat memodifikasi variabel luar (Outer Reassignment)")
     fun testBlockModifiesOuterVariableValue() {
         val script = """
-            var total = 10 m
+            total = 10 m
             {
                 total = 25 m
             }
@@ -146,9 +146,9 @@ class BlockStatementTest {
     @DisplayName("Blok membayangi (shadowing) variabel luar dengan tipe/satuan berbeda di dalam blok")
     fun testBlockShadowingWithDifferentDimension() {
         val script = """
-            var item = 10 m
+            item = 10 m
             {
-                var item = 5 kg
+                item = 5 kg
                 print item
             }
             print item
@@ -166,13 +166,13 @@ class BlockStatementTest {
     @DisplayName("Blok di dalam ekspresi atau blok bersarang bertingkat 4 (Deeply Nested)")
     fun testDeeplyNestedBlocks() {
         val script = """
-            var a = 1 m
+            a = 1 m
             {
-                var b = 2 m
+                b = 2 m
                 {
-                    var c = 3 m
+                    c = 3 m
                     {
-                        var d = 4 m
+                        d = 4 m
                         print a + b + c + d
                     }
                 }
@@ -187,7 +187,7 @@ class BlockStatementTest {
     fun testSiblingScopeIsolation() {
         val script = """
             {
-                var secret = 42 J
+                secret = 42 J
             }
             {
                 print secret
@@ -203,11 +203,11 @@ class BlockStatementTest {
     fun testSiblingBlocksIndependence() {
         val script = """
             {
-                var temp = 300 K
+                temp = 300 K
                 print temp
             }
             {
-                var temp = 350 K
+                temp = 350 K
                 print temp
             }
         """.trimIndent()

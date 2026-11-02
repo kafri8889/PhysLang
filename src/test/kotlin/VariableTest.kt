@@ -35,10 +35,10 @@ class VariableTest {
     }
 
     @Test
-    @DisplayName("Deklarasi variabel dengan besaran fisika dan print")
+    @DisplayName("Deklarasi variabel dengan besaran fisika dan print (id = expr)")
     fun testVariableDeclarationAndPrint() {
         val script = """
-            var distance = 100 m
+            distance = 100 m
             print distance
         """.trimIndent()
 
@@ -49,9 +49,9 @@ class VariableTest {
     @DisplayName("Aritmetika antar variabel berdimensi sama")
     fun testVariableArithmetic() {
         val script = """
-            var a = 2 km
-            var b = 500 m
-            var total = a + b
+            a = 2 km
+            b = 500 m
+            total = a + b
             print total
         """.trimIndent()
 
@@ -63,7 +63,7 @@ class VariableTest {
     @DisplayName("Penugasan ulang variabel (Reassignment) dengan dimensi yang valid")
     fun testVariableReassignment() {
         val script = """
-            var speed = 10 m / s
+            speed = 10 m / s
             speed = 25 m / s
             print speed
         """.trimIndent()
@@ -75,7 +75,7 @@ class VariableTest {
     @DisplayName("Penugasan ulang variabel (Reassignment) dengan operasi matematika yang valid")
     fun testVariableReassignmentWithMath() {
         val script = """
-            var mass = 50 kg
+            mass = 50 kg
             mass = mass + 10 kg
             mass = mass - 5 kg
             print mass
@@ -96,26 +96,25 @@ class VariableTest {
     }
 
     @Test
-    @DisplayName("Menolak deklarasi variabel ganda dengan nama yang sama pada scope yang sama")
-    fun testDuplicateVariableDeclaration() {
+    @DisplayName("Menolak penggunaan keyword legacy 'var' untuk deklarasi variabel")
+    fun testRejectLegacyVarKeyword() {
         val script = """
             var x = 10 m
-            var x = 20 m
         """.trimIndent()
 
         val output = runAndGetOutput(script)
-        assertTrue(output.contains("ERROR:") && output.contains("already defined"))
+        assertTrue(output.contains("ERROR:"), "Harus menolak keyword var yang sudah tidak didukung di v2")
     }
 
     @Test
-    @DisplayName("Menolak penugasan nilai ke variabel yang belum pernah dideklarasikan")
-    fun testReassignmentToUndeclaredVariable() {
+    @DisplayName("Penugasan langsung tanpa var (id = expr) secara otomatis mendeklarasikan variabel baru")
+    fun testDirectAssignmentDeclaresVariable() {
         val script = """
             speed = 100 m / s
+            print speed
         """.trimIndent()
 
-        val output = runAndGetOutput(script)
-        assertTrue(output.contains("ERROR:") && output.contains("not defined"))
+        assertEquals("100.0 m*s^-1", runAndGetOutput(script))
     }
 
     // ==========================================
@@ -123,10 +122,10 @@ class VariableTest {
     // ==========================================
 
     @Test
-    @DisplayName("Deklarasi variabel tanpa inisialisasi awal (var a)")
+    @DisplayName("Inisialisasi null dan penugasan nilai berikutnya (a = null)")
     fun testUninitializedVariableDeclaration() {
         val script = """
-            var a
+            a = null
             a = 15 m
             print a
         """.trimIndent()
@@ -135,10 +134,10 @@ class VariableTest {
     }
 
     @Test
-    @DisplayName("Deklarasi variabel bernilai null eksplisit (var a = null)")
+    @DisplayName("Deklarasi variabel bernilai null eksplisit (a = null)")
     fun testExplicitNullVariableDeclaration() {
         val script = """
-            var a = null
+            a = null
             a = 50 kg
             print a
         """.trimIndent()
@@ -147,10 +146,10 @@ class VariableTest {
     }
 
     @Test
-    @DisplayName("Mencetak variabel yang belum diinisialisasi harus menampilkan null")
+    @DisplayName("Mencetak variabel bernilai null harus menampilkan null")
     fun testPrintUninitializedVariable() {
         val script = """
-            var a
+            a = null
             print a
         """.trimIndent()
 
@@ -158,11 +157,11 @@ class VariableTest {
     }
 
     @Test
-    @DisplayName("Menolak operasi matematika jika salah satu variabel masih belum diinisialisasi / null")
+    @DisplayName("Menolak operasi matematika jika salah satu variabel masih bernilai null")
     fun testRejectMathOnUninitializedVariable() {
         val script = """
-            var a
-            var b = a + 10 m
+            a = null
+            b = a + 10 m
         """.trimIndent()
 
         val output = runAndGetOutput(script)
@@ -173,7 +172,7 @@ class VariableTest {
     @DisplayName("Penugasan nilai (assignment) berturut-turut pada variabel yang sama")
     fun testSequentialReassignments() {
         val script = """
-            var x = 1 m
+            x = 1 m
             x = 2 m
             x = 3 m
             x = 4 m
@@ -191,7 +190,6 @@ class VariableTest {
     @DisplayName("Assignment expression menghasilkan nilai yang bisa langsung dicetak (print (a = 10 m))")
     fun testAssignmentAsPrintableExpression() {
         val script = """
-            var a
             print (a = 10 m)
         """.trimIndent()
 
@@ -202,8 +200,6 @@ class VariableTest {
     @DisplayName("Chained Assignment: memberikan nilai sekaligus ke beberapa variabel (a = b = 25 s)")
     fun testChainedAssignment() {
         val script = """
-            var a
-            var b
             a = b = 25 s
             print a
             print b
@@ -221,8 +217,7 @@ class VariableTest {
     @DisplayName("Assignment di dalam ekspresi matematika (misal (a = 5 m) + 10 m)")
     fun testAssignmentEmbeddedInArithmeticExpression() {
         val script = """
-            var a
-            var result = (a = 5 m) + 10 m
+            result = (a = 5 m) + 10 m
             print a
             print result
         """.trimIndent()
@@ -239,9 +234,6 @@ class VariableTest {
     @DisplayName("Chained Assignment dengan 3 variabel sekaligus (x = y = z = 100 N)")
     fun testTripleChainedAssignment() {
         val script = """
-            var x
-            var y
-            var z
             x = y = z = 100 N
             print x
             print y
@@ -265,7 +257,7 @@ class VariableTest {
     @DisplayName("Stress Test: Akumulasi dan mutasi berturut-turut pada variabel yang sama")
     fun testSelfReferentialAccumulation() {
         val script = """
-            var x = 10 m
+            x = 10 m
             x = x + 5 m
             x = x * 2
             x = x - 10 m
@@ -280,11 +272,11 @@ class VariableTest {
     @DisplayName("Stress Test: Rantai konversi multi-unit (km, m, cm, mm) dijumlahkan ke satu variabel")
     fun testMultiUnitChainAddition() {
         val script = """
-            var d1 = 1 km
-            var d2 = 200 m
-            var d3 = 50 cm
-            var d4 = 30 mm
-            var total = d1 + d2 + d3 + d4
+            d1 = 1 km
+            d2 = 200 m
+            d3 = 50 cm
+            d4 = 30 mm
+            total = d1 + d2 + d3 + d4
             print total
         """.trimIndent()
 
@@ -297,10 +289,10 @@ class VariableTest {
     @DisplayName("Stress Test: Perhitungan Kinematika GLBB s = v0*t + 0.5*a*t^2")
     fun testKinematicsFormulaStressTest() {
         val script = """
-            var v0 = 20 m
-            var t = 5
-            var a = 2 m
-            var dist = (v0 * t) + (0.5 * a * t * t)
+            v0 = 20 m
+            t = 5
+            a = 2 m
+            dist = (v0 * t) + (0.5 * a * t * t)
             print dist
         """.trimIndent()
 
@@ -312,13 +304,13 @@ class VariableTest {
     @DisplayName("Stress Test: Hukum Kekekalan Energi Mekanik (Ep + Ek)")
     fun testMechanicalEnergyFormula() {
         val script = """
-            var m = 2 kg
-            var g = 9.8 m / s^2
-            var h = 10 m
-            var v = 10 m / s
-            var ep = m * g * h
-            var ek = 0.5 * m * (v ^ 2)
-            var em = ep + ek
+            m = 2 kg
+            g = 9.8 m / s^2
+            h = 10 m
+            v = 10 m / s
+            ep = m * g * h
+            ek = 0.5 * m * (v ^ 2)
+            em = ep + ek
             print em
         """.trimIndent()
 
@@ -333,21 +325,12 @@ class VariableTest {
     @DisplayName("Stress Test: Assignment bersarang di dalam operasi pembagian dan penjumlahan")
     fun testNestedAssignmentInDivision() {
         val script = """
-            var p
-            var q
-            var velocity = ((p = 20 m) + (q = 30 m)) / 5 s
+            velocity = ((p = 20 m) + (q = 30 m)) / 5 s
             print p
             print q
             print velocity
         """.trimIndent()
 
-        val expected = """
-            50.0 m
-            30.0 m
-            10.0 m*s^-1
-        """.trimIndent()
-
-        // p bernilai total ekspresi p = 20 m, lalu diuji
         val output = runAndGetOutput(script)
         assertTrue(output.contains("10.0"), "Velocity harus 10.0 m*s^-1")
     }
@@ -356,16 +339,16 @@ class VariableTest {
     @DisplayName("Stress Test: Rantai 10 variabel saling bergantungan (Cascading Variables)")
     fun testCascadingTenVariables() {
         val script = """
-            var v1 = 1 m
-            var v2 = v1 + 1 m
-            var v3 = v2 + 1 m
-            var v4 = v3 + 1 m
-            var v5 = v4 + 1 m
-            var v6 = v5 + 1 m
-            var v7 = v6 + 1 m
-            var v8 = v7 + 1 m
-            var v9 = v8 + 1 m
-            var v10 = v9 + 1 m
+            v1 = 1 m
+            v2 = v1 + 1 m
+            v3 = v2 + 1 m
+            v4 = v3 + 1 m
+            v5 = v4 + 1 m
+            v6 = v5 + 1 m
+            v7 = v6 + 1 m
+            v8 = v7 + 1 m
+            v9 = v8 + 1 m
+            v10 = v9 + 1 m
             print v10
         """.trimIndent()
 
@@ -376,7 +359,7 @@ class VariableTest {
     @DisplayName("Stress Error: Menolak assignment ke ekspresi biner bukan L-value ((a + 5 m) = 10 m)")
     fun testRejectInvalidAssignmentTargetBinaryExpr() {
         val script = """
-            var a = 2 m
+            a = 2 m
             (a + 5 m) = 10 m
         """.trimIndent()
 
@@ -396,14 +379,13 @@ class VariableTest {
     }
 
     @Test
-    @DisplayName("Stress Error: Menolak variabel yang menginisialisasi dirinya sendiri sebelum selesai (var a = a + 5 m)")
+    @DisplayName("Stress Error: Menolak variabel yang menginisialisasi dirinya sendiri sebelum selesai (a = a + 5 m)")
     fun testRejectSelfReferencingInitialization() {
         val script = """
-            var a = a + 5 m
+            a = a + 5 m
         """.trimIndent()
 
         val output = runAndGetOutput(script)
         assertTrue(output.contains("ERROR"), "Harus menolak variabel yang belum terdefinisi saat inisialisasi")
     }
 }
-

@@ -13,7 +13,7 @@ PhysLang is a Kotlin/JVM domain-specific language for mathematical calculations 
 
 - `lang.lexer.Lexer` is a custom hand-written lexer.
 - `lang.parser.Parser` is a Pratt parser using `nud` for prefix/primary parsing and `led` for infix/postfix parsing.
-- `lang.ast` contains expression and statement nodes such as `BinaryExpr`, `UnaryExpr`, `QuantityExpr`, `VariableExpr`, `AssignExpr`, `CallExpr`, `VarDeclStmt`, `PrintStmt`, and `UnitDeclStmt`.
+- `lang.ast` contains expression and statement nodes such as `BinaryExpr`, `UnaryExpr`, `QuantityExpr`, `IdentifierExpr`, `AssignExpr`, `CallExpr`, `VarDeclStmt`, `PrintStmt`, and `UnitDeclStmt`.
 - `lang.ast.visitors.PhysicsEvaluator` is a tree-walking interpreter that implements expression and statement visitors.
 - `lang.core.Environment` stores variables, custom units, and native functions.
 - `lang.ast.PhysicsValue` is the core runtime quantity type.

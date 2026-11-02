@@ -96,16 +96,14 @@ class PhysRunnerTest {
      * Skenario paling rawan di mana user (seperti studi kasusmu sebelumnya) lupa menulis var. Tes ini memastikan sistem keamanan strict declaration milikmu berfungsi.
      */
     @Test
-    fun `test error when assigning to undeclared variable (forgetting var)`() {
+    fun `test direct variable assignment without var`() {
         val script = """
-            // Langsung assign tanpa var
             massa = 50 kg
+            print massa
         """.trimIndent()
 
         val output = runAndGetOutput(script)
-        // Memastikan mesin memprotes karena variabel belum dideklarasikan
-        assertTrue(output.startsWith("ERROR:"), "The runner must print a semantic error when 'var' is missing")
-        assertTrue(output.contains("Variable 'massa' is not defined!"))
+        assertEquals("50.0 kg", output)
     }
 
     @Test
@@ -121,12 +119,11 @@ class PhysRunnerTest {
     }
 
     /**
-     * Menguji kepintaran Environment. Mesin harus bisa membedakan mana yang deklarasi baru (wajib var) dan mana yang menimpa nilai lama (hanya pakai =).
+     * Menguji kepintaran Environment. Mesin harus bisa membedakan mana yang deklarasi baru dan mana yang menimpa nilai lama.
      */
     @Test
     fun `test valid variable reassignment`() {
         val script = """
-            // Re-assign tanpa var (ini valid karena lacinya sudah dibuat)
             speed = 30 m / s
             print speed
         """.trimIndent()
@@ -140,16 +137,14 @@ class PhysRunnerTest {
     }
 
     @Test
-    fun `test error on complex expression with missing var`() {
+    fun `test complex expression assignment without var`() {
         val script = """
-            // Lupa nulis var untuk weight
             weight = 5 kg * 10 m / s^2
             print weight
         """.trimIndent()
 
         val output = runAndGetOutput(script)
-        assertTrue(output.startsWith("ERROR:"), "The semantic analyzer must reject creating a new variable without 'var'")
-        assertTrue(output.contains("Variable 'weight' is not defined!"))
+        assertEquals("50.0 N", output)
     }
 
     @Test

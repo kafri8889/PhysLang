@@ -39,10 +39,10 @@ class NullSafetyTest {
     // ==========================================
 
     @Test
-    @DisplayName("Deklarasi eksplisit var a = null dan dicetak menghasilkan output 'null'")
+    @DisplayName("Deklarasi eksplisit a = null dan dicetak menghasilkan output 'null'")
     fun testExplicitNullDeclarationAndPrint() {
         val script = """
-            var a = null
+            a = null
             print a
         """.trimIndent()
 
@@ -50,10 +50,10 @@ class NullSafetyTest {
     }
 
     @Test
-    @DisplayName("Deklarasi tanpa inisialisasi var a default bernilai null saat dicetak")
+    @DisplayName("Inisialisasi null eksplisit a = null default bernilai null saat dicetak")
     fun testUninitializedVariableDefaultPrint() {
         val script = """
-            var a
+            a = null
             print a
         """.trimIndent()
 
@@ -64,7 +64,7 @@ class NullSafetyTest {
     @DisplayName("Variabel yang sudah memiliki nilai dapat di-assign ulang menjadi null")
     fun testReassignValueToNull() {
         val script = """
-            var item = 15 kg
+            item = 15 kg
             item = null
             print item
         """.trimIndent()
@@ -76,7 +76,7 @@ class NullSafetyTest {
     @DisplayName("Variabel yang awalnya null dapat di-assign menjadi nilai fisika valid")
     fun testReassignNullToPhysicsValue() {
         val script = """
-            var speed = null
+            speed = null
             speed = 25 m / s
             print speed
         """.trimIndent()
@@ -92,7 +92,7 @@ class NullSafetyTest {
     @DisplayName("Menolak operasi unary minus pada variabel null (-a)")
     fun testRejectUnaryMinusOnNullVariable() {
         val script = """
-            var a = null
+            a = null
             print -a
         """.trimIndent()
 
@@ -119,8 +119,8 @@ class NullSafetyTest {
     @DisplayName("Menolak penjumlahan variabel null dengan besaran fisika (a + 10 kg)")
     fun testRejectNullPlusPhysicsValue() {
         val script = """
-            var a = null
-            var result = a + 10 kg
+            a = null
+            result = a + 10 kg
         """.trimIndent()
 
         val output = runAndGetOutput(script)
@@ -131,8 +131,8 @@ class NullSafetyTest {
     @DisplayName("Menolak penjumlahan besaran fisika dengan variabel null (10 kg + a)")
     fun testRejectPhysicsValuePlusNull() {
         val script = """
-            var a = null
-            var result = 10 kg + a
+            a = null
+            result = 10 kg + a
         """.trimIndent()
 
         val output = runAndGetOutput(script)
@@ -143,9 +143,9 @@ class NullSafetyTest {
     @DisplayName("Menolak penjumlahan sesama variabel null (a + b)")
     fun testRejectNullPlusNull() {
         val script = """
-            var a = null
-            var b = null
-            var c = a + b
+            a = null
+            b = null
+            c = a + b
         """.trimIndent()
 
         val output = runAndGetOutput(script)
@@ -160,8 +160,8 @@ class NullSafetyTest {
     @DisplayName("Menolak pengurangan variabel null (a - 5 m)")
     fun testRejectNullSubtraction() {
         val script = """
-            var a = null
-            var diff = a - 5 m
+            a = null
+            diff = a - 5 m
         """.trimIndent()
 
         val output = runAndGetOutput(script)
@@ -172,8 +172,8 @@ class NullSafetyTest {
     @DisplayName("Menolak perkalian variabel null dengan skalar atau besaran (a * 2)")
     fun testRejectNullMultiplication() {
         val script = """
-            var a = null
-            var product = a * 2
+            a = null
+            product = a * 2
         """.trimIndent()
 
         val output = runAndGetOutput(script)
@@ -184,8 +184,8 @@ class NullSafetyTest {
     @DisplayName("Menolak pembagian variabel null (100 J / a)")
     fun testRejectNullDivision() {
         val script = """
-            var a = null
-            var ratio = 100 J / a
+            a = null
+            ratio = 100 J / a
         """.trimIndent()
 
         val output = runAndGetOutput(script)
@@ -196,8 +196,8 @@ class NullSafetyTest {
     @DisplayName("Menolak operasi pangkat pada variabel null (a ^ 2)")
     fun testRejectNullPower() {
         val script = """
-            var a = null
-            var squared = a ^ 2
+            a = null
+            squared = a ^ 2
         """.trimIndent()
 
         val output = runAndGetOutput(script)
@@ -212,7 +212,7 @@ class NullSafetyTest {
     @DisplayName("Menolak compound assignment += pada variabel yang bernilai null (a += 10 m)")
     fun testRejectCompoundAssignOnNullVariable() {
         val script = """
-            var a = null
+            a = null
             a += 10 m
         """.trimIndent()
 

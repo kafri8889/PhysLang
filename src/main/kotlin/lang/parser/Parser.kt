@@ -111,7 +111,7 @@ class Parser(
                 innerExpr
             }
             TokenType.Identifier -> {
-                VariableExpr(token)
+                IdentifierExpr(token)
             }
             TokenType.StringLiteral -> {
                 StringLiteralExpr(token.value)
@@ -123,10 +123,14 @@ class Parser(
         }
     }
 
+    /**
+     * @param token current token (after [left])
+     * @param left left expression
+     */
     fun led(token: Token, left: Expr): Expr? {
         return when (token.tokenType) {
             TokenType.Assign -> {
-                if (left is VariableExpr) {
+                if (left is IdentifierExpr) {
                     val right = parseExpression(Precedence.fromToken(token.tokenType) - 1) ?: return null
 
                     AssignExpr(left.nameToken, right)
@@ -147,7 +151,7 @@ class Parser(
             TokenType.MinusAssign,
             TokenType.MultiplyAssign,
             TokenType.DivideAssign -> {
-                if (left is VariableExpr) {
+                if (left is IdentifierExpr) {
                     val right = parseExpression(Precedence.fromToken(token.tokenType)) ?: return null
 
                     val binaryExpr = BinaryExpr(
@@ -245,7 +249,17 @@ class Parser(
                 BinaryExpr(left, token, right)
             }
 
-            else -> left
+            else -> {
+                reporter.report(
+                    Diagnostic(
+                        message = "Unexpected token '${token.value}' in expression",
+                        type = DiagnosticType.ERROR,
+                        line = token.line,
+                        column = token.startColumn until token.endColumn
+                    )
+                )
+                null
+            }
         }
     }
 
@@ -330,6 +344,7 @@ class Parser(
         return BlockStmt(statements)
     }
 
+    @Deprecated("Not supported")
     fun parseVarDecl(): Stmt? {
 
         val varName = advance() // consume 'var'
@@ -432,9 +447,21 @@ class Parser(
     /**
      * Independent expression
      */
-    fun parseExprStmt(): Stmt {
+    fun parseExprStmt(): Stmt? {
+        val expr = parseExpression(0) ?: return null
 
-        val expr = parseExpression(0)
+        // Check apakah after expression masih ada token liar di baris yang sama
+        if (peek() != null && peek()?.tokenType != TokenType.Eol && peek()?.tokenType != TokenType.Eof) {
+            reporter.report(
+                Diagnostic(
+                    message = "Unexpected token '${peek()?.value}' after expression",
+                    type = DiagnosticType.ERROR,
+                    line = peek()?.line ?: 0,
+                    column = (peek()?.startColumn ?: 0) until (peek()?.endColumn ?: 0)
+                )
+            )
+            return null
+        }
 
         return ExprStmt(expr)
     }

@@ -146,7 +146,7 @@ class PhysicsEvaluator(
         )
     }
 
-    override fun visitVariableExpr(expr: VariableExpr): RuntimeValue {
+    override fun visitIdentifierExpr(expr: IdentifierExpr): RuntimeValue {
         val value = currentEnvironment.getVar(expr.name, true)
         if (value != null) return value
 
@@ -173,13 +173,15 @@ class PhysicsEvaluator(
             )
         }
 
-        return PhysicsValue.zero
+        return RuntimeValue.NullValue
     }
 
     override fun visitAssignExpr(expr: AssignExpr): RuntimeValue {
         val value = expr.value.accept(this)
 
-        currentEnvironment.putVar(expr.name, value)
+        if (!currentEnvironment.assignVar(expr.name, value)) {
+            currentEnvironment.putVar(expr.name, value)
+        }
 
         return value
     }
@@ -199,7 +201,7 @@ class PhysicsEvaluator(
     override fun visitExprStmt(exprStmt: ExprStmt) {
         val value = exprStmt.expr?.accept(this)
 
-        if (exprStmt.expr is VariableExpr) {
+        if (exprStmt.expr is IdentifierExpr) {
             println("$value")
         }
     }

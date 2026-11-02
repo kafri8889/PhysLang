@@ -185,6 +185,54 @@ class Lexer(
                         value = advance().toString()
                     }
                 }
+                peek() == '!' -> {
+                    if (lookahead(1) == '=') {
+                        tokenType = TokenType.NotEqual
+                        value = "!="
+
+                        advance()
+                        advance()
+                    } else {
+                        tokenType = TokenType.Not
+                        value = advance().toString()
+                    }
+                }
+                peek() == '=' -> {
+                    if (lookahead(1) == '=') {
+                        tokenType = TokenType.Equals
+                        value = "=="
+
+                        advance()
+                        advance()
+                    } else {
+                        tokenType = TokenType.Assign
+                        value = advance().toString()
+                    }
+                }
+                peek() == '<' -> {
+                    if (lookahead(1) == '=') {
+                        tokenType = TokenType.LessEqual
+                        value = "<="
+
+                        advance()
+                        advance()
+                    } else {
+                        tokenType = TokenType.Less
+                        value = advance().toString()
+                    }
+                }
+                peek() == '>' -> {
+                    if (lookahead(1) == '=') {
+                        tokenType = TokenType.GreaterEqual
+                        value = ">="
+
+                        advance()
+                        advance()
+                    } else {
+                        tokenType = TokenType.Greater
+                        value = advance().toString()
+                    }
+                }
                 peek() == '(' -> {
                     tokenType = TokenType.OpenParenthesis
                     value = advance().toString()
@@ -204,18 +252,6 @@ class Lexer(
                 peek() == ',' -> {
                     tokenType = TokenType.Comma
                     value = advance().toString()
-                }
-                peek() == '=' -> {
-                    if (lookahead(1) == '=') {
-                        tokenType = TokenType.Equals
-                        value = "=="
-
-                        advance()
-                        advance()
-                    } else {
-                        tokenType = TokenType.Assign
-                        value = advance().toString()
-                    }
                 }
                 else -> advance()
             }

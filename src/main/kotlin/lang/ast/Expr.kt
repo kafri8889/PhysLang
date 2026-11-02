@@ -56,18 +56,18 @@ data class QuantityExpr(
  * @property nameToken Variable name as token
  * @author Anaf
  */
-data class VariableExpr(
+data class IdentifierExpr(
     val nameToken: Token
 ): Expr() {
     val name: String get() = nameToken.value
 
     override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
-        return exprVisitor.visitVariableExpr(this)
+        return exprVisitor.visitIdentifierExpr(this)
     }
 }
 
 /**
- * Assign expression to variable
+ * Assign expression to variable, if variable not exist, create new variable
  *
  * Example: `mass = 10 kg`
  *

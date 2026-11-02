@@ -59,11 +59,18 @@ class SemanticAnalyzerTest {
     }
 
     @Test
-    fun `reports assignment to undeclared variable`() {
+    fun `accepts direct variable assignment as declaration`() {
         val reporter = analyzeExpression("mass = 10 kg")
 
+        assertFalse(reporter.hasErrors())
+    }
+
+    @Test
+    fun `reports assignment with undefined right hand side variable`() {
+        val reporter = analyzeExpression("mass = unknownVar")
+
         assertTrue(reporter.hasErrors())
-        assertTrue(reporter.errors.any { it.message.contains("Variable 'mass' is not defined!") })
+        assertTrue(reporter.errors.any { it.message.contains("Variable or unit 'unknownVar' is not defined!") })
     }
 
     @Test

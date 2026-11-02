@@ -27,6 +27,15 @@ class Environment(private val parent: Environment? = null) {
         symbolTable[variable] = value
     }
 
+    fun assignVar(variable: String, value: RuntimeValue?): Boolean {
+        if (symbolTable.containsKey(variable)) {
+            symbolTable[variable] = value
+            return true
+        }
+
+        return parent?.assignVar(variable, value) ?: false
+    }
+
     fun getVar(variable: String, recursive: Boolean = true): RuntimeValue? {
         if (symbolTable.containsKey(variable)) {
             return symbolTable[variable]

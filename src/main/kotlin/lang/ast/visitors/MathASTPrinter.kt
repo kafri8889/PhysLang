@@ -45,7 +45,7 @@ class MathASTPrinter : ExprVisitor<String> {
         return "(${expr.value.accept(this)} ${expr.unit})"
     }
 
-    override fun visitVariableExpr(expr: VariableExpr): String {
+    override fun visitIdentifierExpr(expr: IdentifierExpr): String {
         return expr.name
     }
 

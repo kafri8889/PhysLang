@@ -55,7 +55,7 @@ class Parser(
      */
     fun consume(
         expected: TokenType,
-        message: String
+        message: (Token?) -> String
     ): Token? {
         val token = peek()
 
@@ -66,7 +66,7 @@ class Parser(
         reporter.report(
             Diagnostic(
                 type = DiagnosticType.ERROR,
-                message = message,
+                message = message(token),
                 line = token?.line ?: 0,
                 column = token?.let {
                     it.startColumn..it.endColumn
@@ -74,7 +74,7 @@ class Parser(
             )
         )
 
-        return null
+        return token
     }
 
     fun nud(token: Token): Expr? {
@@ -146,6 +146,11 @@ class Parser(
 
                     null
                 }
+            }
+            TokenType.In -> {
+                val unitToken = consume(TokenType.Identifier) { "Expected unit name, got ${it?.tokenType}" }
+
+                unitToken?.let { ConversionExpr(left, it) }
             }
             TokenType.PlusAssign,
             TokenType.MinusAssign,
@@ -304,13 +309,14 @@ class Parser(
             TokenType.Var -> parseVarDecl()
             TokenType.Print -> parsePrintStmt()
             TokenType.Unit -> parseUnitDecl()
+            TokenType.Form -> parseFormStmt()
             TokenType.OpenBracket -> parseBlockStmt()
             else -> parseExprStmt()
         }
     }
 
     fun parseBlockStmt(): Stmt? {
-        if (consume(TokenType.OpenBracket, "Expected '{' to start block") == null) {
+        if (consume(TokenType.OpenBracket, { "Expected '{' to start block, got ${it?.tokenType}." }) == null) {
             return null
         }
 
@@ -337,7 +343,7 @@ class Parser(
             skipSeparators()
         }
 
-        if (consume(TokenType.CloseBracket, "Expected '}' to close block") == null) {
+        if (consume(TokenType.CloseBracket, { "Expected '}' to close block, got ${it?.tokenType}." }) == null) {
             return null
         }
 
@@ -436,6 +442,23 @@ class Parser(
         }
 
         return UnitDeclStmt(name, initializer)
+    }
+
+    fun parseFormStmt(): Stmt? {
+        advance() // consume "form"
+
+        val name = consume(TokenType.Identifier, { "Expected identifier after 'form', got '${it?.value}'" }) ?: return null
+
+        consume(TokenType.OpenBracket, { "Expected '(' after '${name.value}', got '${it?.value}'" }) ?: return null
+
+        // todo parse arguments
+
+        consume(TokenType.CloseBracket, { "Expected ')' after '${name.value}', got '${it?.value}'" }) ?: return null
+        consume(TokenType.Assign, { "Expected '=' after ')', got '${it?.value}'" }) ?: return null
+
+        val expression = parseExpression(0) ?: return null
+
+        return FormDeclStmt(name, expression)
     }
 
     fun parsePrintStmt(): Stmt {

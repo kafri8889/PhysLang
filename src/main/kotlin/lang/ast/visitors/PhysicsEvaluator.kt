@@ -198,6 +198,22 @@ class PhysicsEvaluator(
         return callee.callable.call(this, args)
     }
 
+    override fun visitConversionExpr(expr: ConversionExpr): RuntimeValue {
+        val left = expr.left.accept(this) as PhysicsValue
+        val unitName = expr.unitToken.value
+        val targetUnit = currentEnvironment.getUnit(unitName)!!
+
+        val targetScale = targetUnit.value * targetUnit.scale
+        val convertedValue = left.scaledValue / targetScale
+
+        return PhysicsValue(
+            value = convertedValue,
+            dimensions = left.dimensions,
+            scale = targetScale,
+            unitName = unitName
+        )
+    }
+
     override fun visitExprStmt(exprStmt: ExprStmt) {
         val value = exprStmt.expr?.accept(this)
 

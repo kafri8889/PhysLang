@@ -18,4 +18,6 @@ interface ExprVisitor<R> {
 
     fun visitCallExpr(expr: CallExpr): R
 
+    fun visitConversionExpr(expr: ConversionExpr): R
+
 }

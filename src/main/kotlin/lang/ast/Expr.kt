@@ -104,3 +104,20 @@ data class CallExpr(
         return exprVisitor.visitCallExpr(this)
     }
 }
+
+/**
+ * Expression for unit conversion
+ *
+ * Example: `10 kg in g`
+ *
+ * @param left Expression representing the value to be converted.
+ * @param unitToken Token representing the target unit of conversion.
+ */
+data class ConversionExpr(
+    val left: Expr,
+    val unitToken: Token
+): Expr() {
+    override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
+        return exprVisitor.visitConversionExpr(this)
+    }
+}

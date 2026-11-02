@@ -9,6 +9,7 @@ class Precedence {
         fun fromToken(tokenType: TokenType?): Int {
             return when (tokenType) {
                 TokenType.OpenParenthesis -> 6
+                TokenType.In -> 1
                 TokenType.Assign -> 1
                 TokenType.PlusAssign -> 1
                 TokenType.MinusAssign -> 1

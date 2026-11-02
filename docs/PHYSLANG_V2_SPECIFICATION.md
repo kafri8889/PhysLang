@@ -195,4 +195,19 @@ if (F > batasGaya) {
 | **`lang.ast.visitors.PhysicsEvaluator`** | 1. Evaluasi `FormulaDeclStmt`: simpan deklarasi formula ke `Environment`.<br>2. Evaluasi `CallExpr`: binding argumen aktual ke parameter formula, evaluasi ekspresi rumus, kembalikan `PhysicsValue`.<br>3. Evaluasi `IfStmt`: cek boolean condition, eksekusi cabang yang sesuai.<br>4. Evaluasi konversi `in <unit>`. | Runtime interpreter |
 
 ---
+
+## 6. Backlog Fitur Masa Depan: Introspection / Environment Reflection API
+
+Fitur refleksi runtime (terinspirasi dari objek `document` pada Web DOM atau `Information[]` pada Wolfram Language):
+Memungkinkan pengguna mengueri informasi sesi dan metadata lingkungan eksekusi secara langsung.
+
+1. **Kueri Satuan Tersedia (`inspect units` / `units()`):**
+   - Menampilkan seluruh daftar satuan bawaan (*built-in SI*) beserta satuan kustom yang telah didefinisikan melalui `unit <name> = <expr>`.
+2. **Kueri Variabel & Rumus Aktif:**
+   - Menampilkan daftar variabel yang sedang hidup dalam sesi beserta nilai dan dimensi fisiknya.
+   - Menampilkan daftar rumus (`form`) yang terdaftar.
+3. **Filter Berdasarkan Dimensi Fisika:**
+   - Kemampuan memeriksa satuan apa saja yang kompatibel dengan suatu dimensi tertentu (misal: mencari seluruh unit berdimensi *Length* atau *Velocity*).
+
+---
 *Dokumentasi ini menjadi acuan tunggal pengerjaan revisi tugas besar dan kodingan PhysLang v2.*

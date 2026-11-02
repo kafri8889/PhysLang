@@ -24,7 +24,7 @@ class SemanticAnalyzer(
         val left = expr.left.accept(this)
         val right = expr.right.accept(this)
 
-        if (left is SemanticType.NullValue || right is SemanticType.NullValue) {
+        if (left is SemanticType.Null || right is SemanticType.Null) {
             reporter.report(
                 Diagnostic(
                     message = "Operator '${expr.operatorToken.value}' cannot be applied to null operand ().",
@@ -192,7 +192,7 @@ class SemanticAnalyzer(
         when (val right = expr.right.accept(this)) {
             is SemanticType.PhysicsValue -> return right
             else -> {
-                val message = if (right is SemanticType.NullValue) {
+                val message = if (right is SemanticType.Null) {
                     "Operation (\"${expr.operator.name}\") can't be applied to null value!"
                 } else "Operation (\"${expr.operator.name}\") can't be applied to ${right}!"
 
@@ -214,7 +214,7 @@ class SemanticAnalyzer(
         val value = when (val literal = literal.value) {
             is LiteralValue.IntVal -> literal.value.toDouble()
             is LiteralValue.DoubleVal -> literal.value
-            is LiteralValue.NullVal -> return SemanticType.NullValue
+            is LiteralValue.NullVal -> return SemanticType.Null
             else -> {
                 reporter.report(
                     Diagnostic(
@@ -300,7 +300,7 @@ class SemanticAnalyzer(
         if (value != null) return value.toSemanticType()
 
         val hasVar = currentEnvironment.hasVar(expr.nameToken.value)
-        if (hasVar) return SemanticType.NullValue
+        if (hasVar) return SemanticType.Null
 
         val customUnit = currentEnvironment.getUnit(expr.nameToken.value)
         if (customUnit is PhysicsValue) {
@@ -331,7 +331,7 @@ class SemanticAnalyzer(
             if (value !is SemanticType.Unknown) {
                 when (value) {
                     is SemanticType.PhysicsValue -> currentEnvironment.putVar(expr.nameToken.value, value.value)
-                    is SemanticType.NullValue -> currentEnvironment.putVar(expr.nameToken.value, null)
+                    is SemanticType.Null -> currentEnvironment.putVar(expr.nameToken.value, null)
                     else -> currentEnvironment.putVar(expr.nameToken.value, null)
                 }
 
@@ -352,7 +352,7 @@ class SemanticAnalyzer(
 
         when (value) {
             is SemanticType.PhysicsValue -> currentEnvironment.putVar(expr.nameToken.value, value.value)
-            is SemanticType.NullValue -> currentEnvironment.putVar(expr.nameToken.value, null)
+            is SemanticType.Null -> currentEnvironment.putVar(expr.nameToken.value, null)
             else -> currentEnvironment.putVar(expr.nameToken.value, null)
         }
 
@@ -415,6 +415,61 @@ class SemanticAnalyzer(
         return SemanticType.NativeFunction(callee.function)
     }
 
+    override fun visitConversionExpr(expr: ConversionExpr): SemanticType {
+        val left = expr.left.accept(this)
+        val unitName = expr.unitToken.value
+
+        if (currentEnvironment.hasUnit(unitName)) {
+            val targetUnit = currentEnvironment.getUnit(unitName)!!
+
+            if (left is SemanticType.PhysicsValue) {
+                if (targetUnit.dimensions.contentEquals(left.value.dimensions)) {
+                    return SemanticType.PhysicsValue(left.value)
+                }
+
+                // Dimensi tidak cocok
+                val sourceUnitName = currentEnvironment.getUnitByDimensions(left.value.dimensions)?.first
+                    ?: left.value.dimensionsToString()
+
+                reporter.report(
+                    Diagnostic(
+                        message = "Cannot convert '$sourceUnitName' to '$unitName' (dimensional mismatch)!",
+                        type = DiagnosticType.ERROR,
+                        line = expr.unitToken.line,
+                        column = expr.unitToken.startColumn until expr.unitToken.endColumn
+                    )
+                )
+
+                return SemanticType.Unknown
+            }
+
+            // Kalau left bukan PhysicsValue (misal String, Function, Null, dsb)
+            if (left !is SemanticType.Unknown) {
+                reporter.report(
+                    Diagnostic(
+                        message = "Cannot convert ${left.displayName()} to unit '$unitName'. Operator 'in' requires a physics quantity on the left side.",
+                        type = DiagnosticType.ERROR,
+                        line = expr.unitToken.line,
+                        column = expr.unitToken.startColumn until expr.unitToken.endColumn
+                    )
+                )
+            }
+
+            return SemanticType.Unknown
+        }
+
+        reporter.report(
+            Diagnostic(
+                message = "Unit $unitName is not defined!",
+                type = DiagnosticType.ERROR,
+                line = expr.unitToken.line,
+                column = expr.unitToken.startColumn until expr.unitToken.endColumn
+            )
+        )
+
+        return SemanticType.Unknown
+    }
+
     override fun visitExprStmt(exprStmt: ExprStmt) {
         exprStmt.expr?.accept(this)
     }
@@ -441,7 +496,7 @@ class SemanticAnalyzer(
 
         when (exprSemanticType) {
             is SemanticType.PhysicsValue -> currentEnvironment.putVar(varDeclStmt.name, exprSemanticType.value)
-            is SemanticType.NullValue, null -> currentEnvironment.putVar(varDeclStmt.name, null)
+            is SemanticType.Null, null -> currentEnvironment.putVar(varDeclStmt.name, null)
             else -> currentEnvironment.putVar(varDeclStmt.name, null)
         }
     }
@@ -462,8 +517,12 @@ class SemanticAnalyzer(
                     column = unitDeclStmt.nameToken.startColumn until unitDeclStmt.nameToken.endColumn
                 )
             )
+            return
         }
 
+        if (value is SemanticType.PhysicsValue) {
+            currentEnvironment.putUnit(unitDeclStmt.nameToken.value, value.value)
+        }
     }
 
     override fun visitBlockStmt(blockStmt: BlockStmt) {
@@ -494,7 +553,7 @@ class SemanticAnalyzer(
             is PhysicsValue -> SemanticType.PhysicsValue(this)
             is StringValue -> SemanticType.String
             is RuntimeValue.NativeFunction -> SemanticType.NativeFunction(this)
-            is RuntimeValue.NullValue -> SemanticType.NullValue
+            is RuntimeValue.NullValue -> SemanticType.Null
         }
     }
 }

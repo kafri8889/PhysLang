@@ -64,6 +64,10 @@ class MathASTPrinter : ExprVisitor<String> {
         return "implement this call expr later"
     }
 
+    override fun visitConversionExpr(expr: ConversionExpr): String {
+        TODO("Not yet implemented")
+    }
+
     private fun parenthesize(
         operator: String,
         vararg exprs: Expr

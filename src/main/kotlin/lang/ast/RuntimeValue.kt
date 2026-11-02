@@ -41,17 +41,16 @@ data class PhysicsValue(
     }
 
     fun dimensionsToString(): String {
-        val symbols = listOf("kg", "m", "s", "A", "K", "mol", "cd")
-
         val parts = mutableListOf<String>()
 
         for (i in dimensions.indices) {
             val exp = dimensions[i]
             if (exp != 0) {
+                val symbol = baseUnitSymbols[i]
                 if (exp == 1) {
-                    parts.add(symbols[i])
+                    parts.add(symbol)
                 } else {
-                    parts.add("${symbols[i]}^$exp")
+                    parts.add("$symbol^$exp")
                 }
             }
         }
@@ -77,6 +76,10 @@ data class PhysicsValue(
     }
 
     companion object {
+
+        val baseUnitSymbols = listOf(
+            "kg", "m", "s", "A", "K", "mol", "cd"
+        )
 
         val emptyDimensions: IntArray
             get() = IntArray(7)

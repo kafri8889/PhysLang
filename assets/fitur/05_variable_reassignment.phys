@@ -1,9 +1,27 @@
-// Feature: variable reassignment
+// Feature: variable reassignment and expression chaining
 // A variable can be updated after it already exists.
-// Reassignment without a previous var declaration is not allowed.
+// Assignment acts as an expression, supporting chained and embedded assignment.
 
 var speed = 10 m / s
 print "Initial speed: " + speed
 
+// Standard reassignment
 speed = speed + 5 m / s
 print "Updated speed: " + speed
+
+// Assignment as an expression
+var power
+print (power = 50 W)
+
+// Chained assignment (right-associative)
+var x
+var y
+x = y = 100 N
+print "x: " + x
+print "y: " + y
+
+// Embedded assignment inside math expression
+var a
+var result = (a = 5 m) + 10 m
+print "a: " + a
+print "result: " + result

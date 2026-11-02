@@ -1,0 +1,342 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{enumitem}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.97,0.97,0.98}
+\definecolor{darkblue}{rgb}{0.0,0.2,0.6}
+
+\lstset{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{darkblue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{lightgray}
+}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=darkblue,
+    urlcolor=darkblue,
+    citecolor=darkblue,
+    pdftitle={Laporan Revisi & Desain Ulang PhysLang v2},
+    pdfauthor={Anaf & Xinxinran}
+}
+
+\title{\textbf{\LARGE Laporan Komprehensif Revisi \& Desain Ulang PhysLang v2}\\[0.3em]
+\Large Transformasi Menuju Domain-Specific Language (DSL) Fisika Komputasional}
+\author{\textbf{Anaf (Lead Architect)} \and \textbf{Xinxinran (Co-Compiler Analyst)}}
+\date{November 2026}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+Dokumen ini menyajikan analisis menyeluruh, justifikasi teoritis, tata bahasa formal, serta rancangan teknis transisi \textbf{PhysLang} dari implementasi awal (\textit{v1}) menuju \textbf{PhysLang v2}. Desain ulang ini dilakukan menyusul evaluasi akademik yang mengidentifikasi bahwa tata bahasa permukaan PhysLang v1 terlalu menyerupai bahasa pemrograman imperatif umum (\textit{general-purpose}) dan belum menonjolkan abstraksi domain fisis secara kuat. PhysLang v2 mengadopsi paradigma \textit{Computational Physicist POV} (gaya lembar kerja laboratorium) dengan menghilangkan \textit{boilerplate} sintaksis yang tidak perlu, memperkenalkan pendefinisian rumus fisis sebagai warga kelas satu (\textit{first-class formula declaration} \texttt{form}), proyeksi konversi satuan (\texttt{in}), serta percabangan kondisional (\texttt{if-else}) yang divalidasi ketat oleh matriks dimensi vektor $\mathbb{Z}^7$. Seluruh perubahan tata bahasa, aturan produksi (EBNF), struktur kuadrupel, tabel perbandingan, dan pemetaan perubahan modul kode sumber disajikan secara mendalam.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Latar Belakang dan Dekonstruksi Masukan Evaluator}
+
+\subsection{Kritik Akademik terhadap PhysLang v1}
+Pada tahap pengujian awal tata bahasa, evaluator memberikan catatan kritis yang mencakup:
+\begin{enumerate}[noitemsep]
+    \item Sintaksis yang diajukan terkesan seperti bahasa pemrograman umum (\textit{general-purpose language}) seperti JavaScript atau Kotlin mini.
+    \item Kurang menonjolnya abstraksi domain fisika pada tingkat aturan produksi tata bahasa permukaan (\textit{surface grammar}).
+    \item Ketiadaan konstruksi fungsional atau formulasi eksplisit seperti pendefinisian entitas $\text{Area}(a, b)$ yang lumrah ditemukan pada bahasa berbasis domain.
+    \item Ketiadaan struktur alur kendali (\textit{control flow}) yang membuat bahasa terlihat belum memiliki kapabilitas pemrosesan bahasa terstruktur secara komprehensif.
+\end{enumerate}
+
+\subsection{Analisis Akar Masalah: Disonansi Sintaksis Permukaan vs Semantik Internal}
+Secara teknis, \textit{backend} PhysLang v1 yang dibangun menggunakan Kotlin sebenarnya telah memiliki analisis semantik fisis yang sangat maju, di antaranya representasi aljabar linier vektor dimensi SI 7-elemen ($\mathbb{Z}^7$) serta validasi kompatibilitas dimensi pada pohon sintaks (\textit{AST}).
+
+Namun, seorang penilai tata bahasa kompilator mengevaluasi bahasa melalui \textbf{aturan sintaksis (EBNF)} yang tercantum pada dokumen laporan. Pada PhysLang v1, aturan produksi yang tampak adalah:
+\begin{align*}
+    \text{VarDeclStmt} &\to \texttt{"var"}\ \text{IDENTIFIER}\ ( \texttt{"="}\ \text{Expression} )^? \\
+    \text{PrintStmt} &\to \texttt{"print"}\ \text{Expression}
+\end{align*}
+Keberadaan kata kunci \texttt{"var"} dan \texttt{"print"} secara visual menyamarkan hakikat domain fisika menjadi sekadar program imperatif biasa yang kebetulan memiliki satuan pada literal angka.
+
+\subsection{Studi Komparasi Bahasa Domain: Dari R hingga Wolfram dan Frink}
+Dalam perancangan DSL, struktur bahasa harus mencerminkan cara berpikir praktisi domain tersebut:
+\begin{itemize}[noitemsep]
+    \item \textbf{Bahasa Statistik (R):} Memiliki operator formula khusus \texttt{\textasciitilde} (\textit{Wilkinson-Rogers notation}) untuk merepresentasikan model regresi linear $\text{mpg} \sim \text{wt} + \text{cyl}$. Karakteristik statistik dijadikan bagian dari tata bahasa, bukan sekadar pemanggilan fungsi pustaka.
+    \item \textbf{Modelica:} Standar industri pemodelan fisika berbasis relasi kesetimbangan persamaan (\textit{equation-oriented}), di mana variabel mengikat dimensi fisis tertentu (\texttt{Length}, \texttt{Force}) dan mengeliminasi konsep mutasi variabel imperatif.
+    \item \textbf{Wolfram Language \& Frink:} Memperlakukan konversi satuan dan operasi dimensi sebagai operasi tingkat pertama (\textit{first-class operator}) menggunakan sintaks natural seperti \texttt{x in meter} atau operator proyeksi fisis.
+\end{itemize}
+
+PhysLang v2 mengambil posisi sebagai \textbf{Lightweight Interactive Physics DSL} yang mengedepankan kemudahan penulisan formula di laboratorium tanpa beban \textit{solver} numerik yang rumit.
+
+\section{Filosofi Desain PhysLang v2: Sudut Pandang Fisikawan}
+
+PhysLang v2 membuang paradigma pemrogram perangkat lunak (\textit{software engineer}) yang kaku dan menggantinya dengan paradigma fisikawan laboratorium:
+\begin{enumerate}
+    \item \textbf{Deklarasi Variabel Nol-Boilerplate (\texttt{id = expr}):}
+    Fisikawan di papan tulis tidak pernah menulis \texttt{var m = 10 kg}. Mereka menulis $m = 10\text{ kg}$. Oleh karena itu, kata kunci \texttt{var} dihapus total dan digantikan oleh penugasan langsung.
+    
+    \item \textbf{Deklarasi Rumus Fisis Eksplisit (\texttt{form}):}
+    Untuk mendefinisikan rumus seperti $\text{Area}(a, b)$, fisikawan tidak memerlukan kurung kurawal berlapis atau kata kunci \texttt{return}. PhysLang v2 memperkenalkan konstruksi \texttt{form}:
+    \begin{equation*}
+        \texttt{form Area(p, l) = p * l}
+    \end{equation*}
+    Penggunaan kata kunci \texttt{form} menghilangkan seluruh potensi ambiguitas pada parser antara pemanggilan fungsi (\textit{CallExpr}) dan deklarasi rumus baru.
+    
+    \item \textbf{Pelestarian Fitur Kustom Satuan (\texttt{unit}):}
+    Fitur unggulan pembuatan satuan dinamis berbasis ekspresi fisis tetap dipertahankan dan disempurnakan:
+    \begin{equation*}
+        \texttt{unit kph = 1000 m / 3600 s}
+    \end{equation*}
+    
+    \item \textbf{Operator Proyeksi Satuan (\texttt{in}):}
+    Hasil evaluasi dapat langsung diamati dalam skala satuan tertentu secara deklaratif:
+    \begin{equation*}
+        \texttt{inspect Ek in kJ}
+    \end{equation*}
+    
+    \item \textbf{Kondisi Batas Fisis (\texttt{if-else}):}
+    Struktur alur kendali dihadirkan bukan untuk rekayasa algoritma umum, melainkan untuk mengevaluasi kondisi batas fisis (\textit{physical boundary conditions}), titik kritis suhu, atau transisi fase, di mana operator pembanding ($<, >, ==$) wajib berdimensi setara.
+\end{enumerate}
+
+\section{Tata Bahasa Formal (EBNF Grammar)}
+
+Berikut adalah spesifikasi tata bahasa bebas konteks (\textit{Context-Free Grammar}) dalam notasi \textit{Extended Backus-Naur Form} (EBNF) untuk PhysLang v2.
+
+\subsection{Aturan Leksikal (Tokens)}
+\begin{lstlisting}[language=SQL]
+DIGIT            ::= [0-9]
+INT_LITERAL      ::= DIGIT+
+DOUBLE_LITERAL   ::= DIGIT+ "." DIGIT+
+NUMBER_LITERAL   ::= INT_LITERAL | DOUBLE_LITERAL
+STRING_LITERAL   ::= '"' [^"]* '"'
+IDENTIFIER       ::= [a-zA-Z_][a-zA-Z0-9_]*
+
+KEYWORD          ::= "unit" | "form" | "inspect" | "in" | "if" | "else" | "null"
+
+ASSIGN_OP        ::= "=" | "+=" | "-=" | "*=" | "/="
+COMPARE_OP       ::= "==" | "!=" | "<" | "<=" | ">" | ">="
+ARITH_OP         ::= "+" | "-" | "*" | "/" | "^"
+DELIMITER        ::= "(" | ")" | "{" | "}" | "," | "\n"
+\end{lstlisting}
+
+\subsection{Aturan Sintaksis (Syntactic Production Rules)}
+\begin{lstlisting}[language=SQL]
+Program          ::= ( Statement | "\n" )* EOF
+
+Statement        ::= UnitDeclStmt
+                   | FormulaDeclStmt
+                   | IfStmt
+                   | InspectStmt
+                   | BlockStmt
+                   | VarAssignStmt
+                   | ExprStmt
+
+UnitDeclStmt     ::= "unit" IDENTIFIER "=" Expression
+FormulaDeclStmt  ::= "form" IDENTIFIER "(" ParameterList? ")" "=" Expression
+ParameterList    ::= IDENTIFIER ( "," IDENTIFIER )*
+
+IfStmt           ::= "if" "(" ConditionExpr ")" BlockStmt ( "else" BlockStmt )?
+ConditionExpr    ::= Expression COMPARE_OP Expression
+
+InspectStmt      ::= "inspect" Expression ( "in" IDENTIFIER )?
+BlockStmt        ::= "{" ( Statement | "\n" )* "}"
+VarAssignStmt    ::= IDENTIFIER ASSIGN_OP Expression
+ExprStmt         ::= Expression
+
+Expression       ::= ConversionExpr
+ConversionExpr   ::= TermAddSub ( "in" IDENTIFIER )?
+TermAddSub       ::= TermMulDiv ( ( "+" | "-" ) TermMulDiv )*
+TermMulDiv       ::= TermPower ( ( "*" | "/" ) TermPower )*
+TermPower        ::= UnaryExpr ( "^" UnaryExpr )*
+UnaryExpr        ::= "-" UnaryExpr | PostfixExpr
+PostfixExpr      ::= Primary ( "(" ArgumentList? ")" )*
+ArgumentList     ::= Expression ( "," Expression )*
+
+Primary          ::= QuantityLiteral
+                   | NUMBER_LITERAL
+                   | STRING_LITERAL
+                   | IDENTIFIER
+                   | "(" Expression ")"
+
+QuantityLiteral  ::= NUMBER_LITERAL IDENTIFIER
+\end{lstlisting}
+
+\section{Struktur Kuadrupel Formal: $G = (V_N, V_T, S, P)$}
+
+Berdasarkan definisi matematis Chomsky, tata bahasa PhysLang v2 didefinisikan oleh kuadrupel:
+\begin{equation}
+    G = (V_N, V_T, S, P)
+\end{equation}
+
+\subsection{1. Himpunan Simbol Non-Terminal ($V_N$)}
+Entitas variabel tata bahasa yang digunakan dalam penurunan struktur sintaksis:
+\begin{align*}
+V_N = \{ & \text{Program}, \text{Statement}, \text{UnitDeclStmt}, \text{FormulaDeclStmt}, \text{ParameterList}, \\
+         & \text{IfStmt}, \text{ConditionExpr}, \text{InspectStmt}, \text{BlockStmt}, \text{VarAssignStmt}, \\
+         & \text{ExprStmt}, \text{Expression}, \text{ConversionExpr}, \text{TermAddSub}, \text{TermMulDiv}, \\
+         & \text{TermPower}, \text{UnaryExpr}, \text{PostfixExpr}, \text{ArgumentList}, \text{Primary}, \\
+         & \text{QuantityLiteral} \}
+\end{align*}
+
+\subsection{2. Himpunan Simbol Terminal ($V_T$)}
+Token leksikal fisik yang dikenali langsung oleh penganalisis leksikal:
+\begin{align*}
+V_T = \{ & \text{NUMBER\_LITERAL}, \text{STRING\_LITERAL}, \text{IDENTIFIER}, \\
+         & \texttt{"unit"}, \texttt{"form"}, \texttt{"inspect"}, \texttt{"in"}, \texttt{"if"}, \texttt{"else"}, \texttt{"null"}, \\
+         & \texttt{"="}, \texttt{"+="}, \texttt{"-="}, \texttt{"*="}, \texttt{"/="}, \\
+         & \texttt{"=="}, \texttt{"!="}, \texttt{"<"}, \texttt{"<="}, \texttt{">"}, \texttt{">="}, \\
+         & \texttt{"+"}, \texttt{"-"}, \texttt{"*"}, \texttt{"/"}, \texttt{"\string^"}, \\
+         & \texttt{"("}, \texttt{")"}, \texttt{"\{"}, \texttt{"\}"}, \texttt{","}, \texttt{"\textbackslash n"} \}
+\end{align*}
+
+\subsection{3. Simbol Awal ($S$)}
+\begin{equation*}
+    S = \text{Program}
+\end{equation*}
+
+\subsection{4. Himpunan Aturan Produksi ($P$)}
+Himpunan relasi penurunan produksi yang memetakan elemen $V_N \to (V_N \cup V_T)^*$, persis sebagaimana didefinisikan pada subbab 3.2.
+
+\section{Contoh Komparasi Kode Program: v1 vs v2}
+
+Berikut adalah perbandingan konkret skrip yang mengevaluasi dinamika gerak dan gaya:
+
+\subsection{Implementasi PhysLang v1 (Imperatif Konvensional)}
+\begin{lstlisting}
+unit kph = 1000 m / 3600 s
+
+var m = 1200 kg
+var v = 90 kph
+var a = 2.5 m/s^2
+
+var F = m * a
+var Ek = 0.5 * m * v^2
+
+print "Gaya resultan: " + F
+print "Energi kinetik: " + Ek
+\end{lstlisting}
+
+\subsection{Implementasi PhysLang v2 (Sintaks Laboratorium Fisika Murni)}
+\begin{lstlisting}
+# 1. Deklarasi satuan pengukuran eksperimen
+unit kph = 1000 m / 3600 s
+unit Newton = 1 kg * m / s^2
+
+# 2. Perumusan hukum fisika dasar (First-class Formula)
+form Area(p, l) = p * l
+form Gaya(m, a) = m * a
+form EnergiKinetik(m, v) = 0.5 * m * v^2
+
+# 3. Lembar data observasi (tanpa var)
+massaUji = 1200 kg
+kecepatan = 90 kph
+percepatan = 2.5 m/s^2
+
+# 4. Komputasi menggunakan formula
+F = Gaya(massaUji, percepatan)
+Ek = EnergiKinetik(massaUji, kecepatan)
+
+# 5. Observasi dan proyeksi satuan
+inspect F in Newton
+inspect Ek in kJ
+
+# 6. Pengujian kondisi batas sistem mekanik
+batasKritis = 2500 Newton
+if (F > batasKritis) {
+    inspect "Peringatan: Terjadi over-stress mekanis!"
+} else {
+    inspect "Status beban normal."
+}
+\end{lstlisting}
+
+\section{Daftar Fitur: Penambahan, Modifikasi, dan Penghapusan}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lp{4.2cm}X}
+\toprule
+\textbf{Nama Fitur} & \textbf{Klasifikasi} & \textbf{Deskripsi Teknis \& Rasionalisasi} \\
+\midrule
+\texttt{form} & \textbf{Fitur Baru} & Mendefinisikan fungsi fisis satu baris matematis murni. Menghilangkan ambiguitas pemanggilan fungsi dengan deklarasi formula. \\
+\texttt{in} & \textbf{Fitur Baru} & Operator konversi satuan langsung. Memproyeksikan besaran $\mathbb{Z}^7$ ke unit target yang kompatibel dimensinya. \\
+\texttt{if-else} & \textbf{Fitur Baru} & Kontrol alur untuk evaluasi kondisi batas fisis. Memeriksa relasi komparasi dengan verifikasi dimensi wajib setara. \\
+\texttt{inspect} & \textbf{Modifikasi} & Menggantikan kata kunci \texttt{print} agar merefleksikan terminologi observasi sains di laboratorium. \\
+\texttt{id = expr} & \textbf{Modifikasi} & Mengizinkan inisialisasi variabel langsung tanpa kata kunci pembuka deklarasi. \\
+\texttt{var} & \textbf{Dihapus} & Dieliminasi total karena merupakan artefak bahasa pemrograman umum yang merusak estetika DSL sains. \\
+\texttt{unit} & \textbf{Dipertahankan \& Diperkuat} & Fitur inti perhitungan aljabar satuan kustom tetap dipertahankan 100\% tanpa perubahan mekanisme komputasi. \\
+\bottomrule
+\end{tabularx}
+\caption{Matriks Perubahan Fitur Bahasa PhysLang v2}
+\end{table}
+
+\section{Pemetaan Perubahan pada Arsitektur Kompilator Kotlin}
+
+Implementasi PhysLang v2 tetap mempertahankan arsitektur \textit{Pratt Parser} dan \textit{Tree-Walking Interpreter} yang ada, namun memperbarui beberapa modul kunci:
+
+\subsection{1. Modul Leksikal (\texttt{lang.lexer})}
+\begin{itemize}[noitemsep]
+    \item \textbf{Penambahan Token Type:} \texttt{Form}, \texttt{Inspect}, \texttt{In}, \texttt{If}, \texttt{Else}, \texttt{Less}, \texttt{Greater}, \texttt{LessEqual}, \texttt{GreaterEqual}, \texttt{EqualEqual}, \texttt{NotEqual}.
+    \item \textbf{Penghapusan Token Type:} Menandai \texttt{Var} sebagai \textit{deprecated} atau dihapus dari daftar kata kunci di \texttt{Keywords.kt}.
+\end{itemize}
+
+\subsection{2. Modul AST (\texttt{lang.ast})}
+\begin{itemize}[noitemsep]
+    \item \textbf{Penambahan Node Statement:}
+    \begin{itemize}
+        \item \texttt{FormulaDeclStmt(name: Token, params: List<Token>, body: Expr)}
+        \item \texttt{IfStmt(condition: Expr, thenBranch: Stmt, elseBranch: Stmt?)}
+        \item \texttt{InspectStmt(expr: Expr, targetUnit: Token?)}
+    \end{itemize}
+    \item \textbf{Penyesuaian Statement Penugasan:} Menyatukan deklarasi dan penugasan ke dalam \texttt{AssignStmt} yang secara otomatis mendaftarkan simbol ke \texttt{Environment} jika belum ada.
+\end{itemize}
+
+\subsection{3. Modul Parser (\texttt{lang.parser})}
+\begin{itemize}[noitemsep]
+    \item Mengimplementasikan metode \texttt{parseFormulaDecl()} untuk mengenali pola \texttt{form IDENTIFIER ( args ) = expr}.
+    \item Mengimplementasikan metode \texttt{parseIfStmt()} yang mem-parse kondisi dalam kurung dan blok eksekusi cabang.
+    \item Menambahkan operator infix \texttt{"in"} ke dalam tabel presedensi (\textit{binding power}) ekspresi.
+\end{itemize}
+
+\subsection{4. Modul Penganalisis Semantik (\texttt{lang.semantic.SemanticAnalyzer})}
+\begin{itemize}[noitemsep]
+    \item \textbf{Verifikasi Komparasi:} Memastikan bahwa ekspresi di sisi kiri dan kanan operator perbandingan ($<, >, ==$) memiliki vektor eksponen dimensi $\mathbb{Z}^7$ yang identik. Membandingkan panjang dengan massa akan langsung memicu \texttt{DiagnosticType.ERROR}.
+    \item \textbf{Verifikasi Proyeksi \texttt{in}:} Memeriksa apakah satuan target pada operasi \texttt{in} memiliki dimensi yang kompatibel dengan ekspresi sumber.
+\end{itemize}
+
+\subsection{5. Modul Runtime Evaluator (\texttt{lang.ast.visitors.PhysicsEvaluator})}
+\begin{itemize}[noitemsep]
+    \item Menyimpan objek \texttt{FormulaValue} di \texttt{Environment}. Ketika formula dipanggil via \texttt{CallExpr}, dibuat \textit{local environment} untuk mengevaluasi parameter aktual dan mengembalikan \texttt{PhysicsValue}.
+    \item Mengevaluasi cabang \texttt{IfStmt} berdasarkan nilai kebenaran ekspresi boolean.
+    \item Menghitung faktor skala konversi satuan saat mengevaluasi pernyataan \texttt{InspectStmt} dengan klausa \texttt{in}.
+\end{itemize}
+
+\section{Kesimpulan}
+Transformasi PhysLang menuju versi 2 berhasil merekonsiliasi ekspektasi akademik evaluator kompilator dengan fondasi komputasi yang telah dibangun. Dengan mengadopsi \textit{Domain-Specific Grammar} yang dirancang khusus untuk fisikawan, PhysLang v2 memiliki identitas yang kuat, bebas dari kesan bahasa umum tiruan, namun tetap mempertahankan keunggulan perhitungan dimensi otomatis dan fleksibilitas pendefinisian satuan mandiri.
+
+\end{document}

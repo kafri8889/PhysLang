@@ -1,0 +1,14 @@
+// Feature: null safety and state transitions
+// Variables can hold null or start uninitialized.
+// Variables can transition between null and physical values safely.
+
+var sensorReading = null
+print sensorReading
+
+// Reassigning null to a valid physical quantity
+sensorReading = 24.5 m / s
+print "Active sensor reading: " + sensorReading
+
+// Resetting back to null
+sensorReading = null
+print sensorReading

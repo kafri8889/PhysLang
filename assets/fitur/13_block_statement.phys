@@ -1,0 +1,13 @@
+// Feature: block statement and lexical scoping
+// Enclosing code in { ... } creates a local child scope.
+// Variables declared inside a block do not leak to the outer scope.
+
+var totalDistance = 100 m
+
+{
+    var localOffset = 25 m
+    var currentPosition = totalDistance + localOffset
+    print "Inside block position: " + currentPosition
+}
+
+print "Outside block distance: " + totalDistance

@@ -8,8 +8,23 @@ import lang.parser.Parser
 import lang.semantic.SemanticAnalyzer
 import java.io.File
 
-fun main() {
-    ExampleRunner().run()
+fun main(args: Array<String>) {
+    if (args.isEmpty()) {
+        ExampleRunner().run()
+        return
+    }
+
+    var hasFailure = false
+    for (path in args) {
+        val file = File(path)
+        if (!file.isFile) {
+            System.err.println("File not found: $path")
+            hasFailure = true
+            continue
+        }
+        if (!ExampleRunner().runFileDirectly(file)) hasFailure = true
+    }
+    if (hasFailure) kotlin.system.exitProcess(1)
 }
 
 class PhysLang {
@@ -118,6 +133,9 @@ class ExampleRunner(
         runScriptFile(selectedFile, title)
     }
 
+    /** Executes a script file without menus or source echo. Returns false when errors were reported. */
+    fun runFileDirectly(file: File): Boolean = executeSequentially(file.readText())
+
     private fun runScriptFile(file: File, label: String) {
         val source = file.readText()
 
@@ -133,7 +151,7 @@ class ExampleRunner(
         executeSequentially(source)
     }
 
-    private fun executeSequentially(source: String) {
+    private fun executeSequentially(source: String): Boolean {
         val environment = Environment()
         val reporter = ErrorReporter()
         val parser = Parser(Lexer(source).lex(), reporter)
@@ -141,7 +159,7 @@ class ExampleRunner(
 
         if (reporter.hasErrors()) {
             reporter.printAll(source)
-            return
+            return false
         }
 
         val evaluator = PhysicsEvaluator(environment)
@@ -153,10 +171,11 @@ class ExampleRunner(
 
             if (reporter.hasErrors()) {
                 reporter.printAll(source)
-                return
+                return false
             }
 
             statement.accept(evaluator)
         }
+        return true
     }
 }

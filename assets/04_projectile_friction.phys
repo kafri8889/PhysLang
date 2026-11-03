@@ -6,15 +6,15 @@
 unit gravity = 10 m / s^2
 unit launchSpeed = 20 m / s
 
-var mass = 2 kg
-var frictionCoefficient = 0.2
+mass = 2 kg
+frictionCoefficient = 0.2
 
-var flightTime = (2 * launchSpeed * 0.6) / gravity
-var range = launchSpeed * 0.8 * flightTime
-var kineticEnergy = 0.5 * mass * launchSpeed^2
-var frictionForce = frictionCoefficient * mass * gravity
-var slidingDistance = kineticEnergy / frictionForce
-var totalDistance = range + slidingDistance
+flightTime = (2 * launchSpeed * 0.6) / gravity
+range = launchSpeed * 0.8 * flightTime
+kineticEnergy = 0.5 * mass * launchSpeed^2
+frictionForce = frictionCoefficient * mass * gravity
+slidingDistance = kineticEnergy / frictionForce
+totalDistance = range + slidingDistance
 
 print "Flight time: " + flightTime
 print "Range: " + range

@@ -156,7 +156,7 @@ class BlockStatementTest {
 
         val expected = """
             5.0 kg
-            10.0 m
+            5.0 kg
         """.trimIndent()
 
         assertEquals(expected, runAndGetOutput(script))

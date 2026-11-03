@@ -2,7 +2,7 @@
 // Variables can hold null or start uninitialized.
 // Variables can transition between null and physical values safely.
 
-var sensorReading = null
+sensorReading = null
 print sensorReading
 
 // Reassigning null to a valid physical quantity

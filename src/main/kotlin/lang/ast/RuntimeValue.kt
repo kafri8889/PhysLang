@@ -1,12 +1,35 @@
 package lang.ast
 
+import lang.ast.visitors.PhysicsEvaluator
 import lang.core.Callable
+import lang.core.Environment
 
 /**
  * Data type for runtime
  */
 sealed interface RuntimeValue {
     data class NativeFunction(val name: String, val callable: Callable) : RuntimeValue
+
+    /**
+     * User-defined formula declared with `form`. Parameters are bound in a fresh
+     * scope whose parent is the declaring environment (closure).
+     */
+    class Formula(
+        val name: String,
+        val parameters: List<String>,
+        val body: Expr,
+        val closure: Environment
+    ) : RuntimeValue, Callable {
+        override fun arity(): Int = parameters.size
+
+        override fun call(evaluator: PhysicsEvaluator, arguments: List<RuntimeValue>): RuntimeValue {
+            val local = Environment(closure)
+            parameters.forEachIndexed { i, parameter -> local.putVar(parameter, arguments.elementAtOrNull(i)) }
+            return evaluator.withEnvironment(local) { body.accept(evaluator) }
+        }
+
+        override fun toString(): String = "<form $name(${parameters.joinToString(", ")})>"
+    }
 
     object NullValue : RuntimeValue {
         override fun toString(): String = "null"

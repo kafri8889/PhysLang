@@ -12,4 +12,6 @@ interface StmtVisitor<R> {
 
     fun visitBlockStmt(blockStmt: BlockStmt): R
 
+    fun visitFormDeclStmt(formDeclStmt: FormDeclStmt): R
+
 }

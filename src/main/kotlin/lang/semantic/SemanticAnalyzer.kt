@@ -233,21 +233,12 @@ class SemanticAnalyzer(
     }
 
     override fun visitQuantityExpr(expr: QuantityExpr): SemanticType {
-        val unitName = when (val unit = expr.unit) {
-            is UnitNode.BaseUnit -> unit.name
-            else -> ""
-        }
-
-        var unitScale = currentEnvironment.getUnit(unitName)
-
-        if (unitScale == null) {
-            unitScale = PhysicsValue.unitRegistry[unitName]
-        }
+        val unitScale = currentEnvironment.resolveUnitNode(expr.unit)
 
         if (unitScale == null) {
             reporter.report(
                 Diagnostic(
-                    message = "Unknown physic unit: $unitName",
+                    message = "Unknown physic unit: ${describeUnit(expr.unit)}",
                     type = DiagnosticType.ERROR,
                     line = expr.value.value.valueToken.line,
                     column = expr.value.value.valueToken.startColumn until expr.value.value.valueToken.endColumn
@@ -256,6 +247,8 @@ class SemanticAnalyzer(
 
             return SemanticType.Unknown
         }
+
+        val unitName = unitScale.unitName
 
         val physicsValue = expr.value.accept(this)
 
@@ -366,6 +359,15 @@ class SemanticAnalyzer(
     override fun visitCallExpr(expr: CallExpr): SemanticType {
         val callee = expr.callee.accept(this)
         val args = expr.arguments.map { it.accept(this) }
+
+        if (callee is SemanticType.Unknown) {
+            // The undefined callee has already been reported.
+            return SemanticType.Unknown
+        }
+
+        if (callee is SemanticType.Formula) {
+            return analyzeFormulaCall(callee.formula, args, expr)
+        }
 
         if (callee !is SemanticType.NativeFunction) {
             reporter.report(
@@ -539,6 +541,87 @@ class SemanticAnalyzer(
         }
     }
 
+    override fun visitFormDeclStmt(formDeclStmt: FormDeclStmt) {
+        if (currentEnvironment.getVar(formDeclStmt.name, false) != null) {
+            reporter.report(
+                Diagnostic(
+                    message = "Conflicting declaration: ${formDeclStmt.name} already defined!",
+                    type = DiagnosticType.ERROR,
+                    line = formDeclStmt.nameToken.line,
+                    column = formDeclStmt.nameToken.startColumn until formDeclStmt.nameToken.endColumn
+                )
+            )
+            return
+        }
+
+        // The body is type-checked per call site, using the actual argument types.
+        currentEnvironment.putVar(
+            formDeclStmt.name,
+            RuntimeValue.Formula(formDeclStmt.name, formDeclStmt.parameterNames, formDeclStmt.body, currentEnvironment)
+        )
+    }
+
+    private val formulasInAnalysis = mutableSetOf<RuntimeValue.Formula>()
+
+    /**
+     * Infers the result type of a formula call by analyzing its body with the
+     * parameters bound to the argument types.
+     */
+    private fun analyzeFormulaCall(
+        formula: RuntimeValue.Formula,
+        args: List<SemanticType>,
+        expr: CallExpr
+    ): SemanticType {
+        fun error(message: String): SemanticType {
+            reporter.report(
+                Diagnostic(
+                    message = message,
+                    type = DiagnosticType.ERROR,
+                    line = expr.parenToken.line,
+                    column = expr.parenToken.startColumn until expr.parenToken.endColumn
+                )
+            )
+            return SemanticType.Unknown
+        }
+
+        if (args.size != formula.arity()) {
+            return error("Formula '${formula.name}' expects ${formula.arity()} arguments, but you provided ${args.size}.")
+        }
+
+        if (formula in formulasInAnalysis) {
+            return error("Formula '${formula.name}' is recursive; recursive formulas are not supported.")
+        }
+
+        val local = Environment(formula.closure)
+        formula.parameters.forEachIndexed { i, parameter ->
+            val placeholder: RuntimeValue? = when (val arg = args[i]) {
+                is SemanticType.PhysicsValue -> arg.value
+                is SemanticType.String -> StringValue("")
+                is SemanticType.Formula -> arg.formula
+                is SemanticType.NativeFunction -> arg.function
+                is SemanticType.Null -> null
+                else -> return SemanticType.Unknown // already reported
+            }
+            local.putVar(parameter, placeholder)
+        }
+
+        val previousEnvironment = currentEnvironment
+        formulasInAnalysis.add(formula)
+        try {
+            currentEnvironment = local
+            return formula.body.accept(this)
+        } finally {
+            currentEnvironment = previousEnvironment
+            formulasInAnalysis.remove(formula)
+        }
+    }
+
+    private fun describeUnit(unit: UnitNode): kotlin.String = when (unit) {
+        is UnitNode.BaseUnit -> unit.name
+        is UnitNode.PowerUnit -> "${describeUnit(unit.base)}^${unit.exponent}"
+        is UnitNode.CompositeUnit -> "${describeUnit(unit.left)}${if (unit.operator == TokenType.Divide) "/" else "*"}${describeUnit(unit.right)}"
+    }
+
     private fun physicsType(dimensions: IntArray): SemanticType.PhysicsValue {
         return SemanticType.PhysicsValue(
             PhysicsValue(
@@ -553,6 +636,7 @@ class SemanticAnalyzer(
             is PhysicsValue -> SemanticType.PhysicsValue(this)
             is StringValue -> SemanticType.String
             is RuntimeValue.NativeFunction -> SemanticType.NativeFunction(this)
+            is RuntimeValue.Formula -> SemanticType.Formula(this)
             is RuntimeValue.NullValue -> SemanticType.Null
         }
     }

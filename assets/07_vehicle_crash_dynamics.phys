@@ -4,16 +4,16 @@
 unit kmh = 1000 m / 3600 s
 unit millisecond = 0.001 s
 
-var vehicleMass = 1.6 t
-var impactSpeed = 96 kmh
-var stoppingTime = 120 millisecond
+vehicleMass = 1.6 t
+impactSpeed = 96 kmh
+stoppingTime = 120 millisecond
 
-var momentum = vehicleMass * impactSpeed
-var kineticEnergy = 0.5 * vehicleMass * impactSpeed^2
-var averageDeceleration = impactSpeed / stoppingTime
-var averageImpactForce = vehicleMass * averageDeceleration
-var crushDistance = 0.5 * impactSpeed * stoppingTime
-var forceRatioToOneKiloNewton = averageImpactForce / 1000 N
+momentum = vehicleMass * impactSpeed
+kineticEnergy = 0.5 * vehicleMass * impactSpeed^2
+averageDeceleration = impactSpeed / stoppingTime
+averageImpactForce = vehicleMass * averageDeceleration
+crushDistance = 0.5 * impactSpeed * stoppingTime
+forceRatioToOneKiloNewton = averageImpactForce / 1000 N
 
 print "Impact speed in SI: " + SI(impactSpeed)
 print "Momentum: " + momentum

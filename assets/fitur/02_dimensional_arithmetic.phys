@@ -2,14 +2,14 @@
 // Multiplication and division combine dimensions.
 // This example creates velocity, acceleration, force, and energy.
 
-var distance = 100 m
-var time = 10 s
-var mass = 2 kg
+distance = 100 m
+time = 10 s
+mass = 2 kg
 
-var velocity = distance / time
-var acceleration = velocity / time
-var force = mass * acceleration
-var energy = force * distance
+velocity = distance / time
+acceleration = velocity / time
+force = mass * acceleration
+energy = force * distance
 
 print "Velocity: " + velocity
 print "Acceleration: " + acceleration

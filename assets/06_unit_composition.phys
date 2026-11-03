@@ -3,9 +3,9 @@
 unit newton = kg * m / s^2
 unit joule = newton * m
 
-var force = 25 newton
-var displacement = 4 m
-var work = force * displacement
+force = 25 newton
+displacement = 4 m
+work = force * displacement
 
 print "Force: " + force
 print "Displacement: " + displacement

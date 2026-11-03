@@ -2,6 +2,9 @@ package lang.core
 
 import lang.ast.PhysicsValue
 import lang.ast.RuntimeValue
+import lang.ast.UnitNode
+import lang.lexer.TokenType
+import kotlin.math.pow
 
 class Environment(private val parent: Environment? = null) {
 
@@ -90,6 +93,37 @@ class Environment(private val parent: Environment? = null) {
 
     fun getUnitByDimensions(dimensions: IntArray, recursive: Boolean = true): Pair<String, PhysicsValue>? {
         return unitRegistry.getUnitByDimensions(dimensions, recursive)
+    }
+
+    /**
+     * Resolves a unit node into a unit definition: value 1.0, dimensions, and the
+     * combined scale relative to SI. Returns null when any referenced unit is unknown.
+     */
+    fun resolveUnitNode(node: UnitNode): PhysicsValue? {
+        return when (node) {
+            is UnitNode.BaseUnit -> getUnit(node.name)?.let {
+                PhysicsValue(1.0, it.dimensions.copyOf(), it.value * it.scale, node.name)
+            }
+            is UnitNode.PowerUnit -> resolveUnitNode(node.base)?.let { base ->
+                PhysicsValue(
+                    1.0,
+                    IntArray(7) { i -> base.dimensions[i] * node.exponent },
+                    base.scale.pow(node.exponent),
+                    "${base.unitName}^${node.exponent}"
+                )
+            }
+            is UnitNode.CompositeUnit -> {
+                val left = resolveUnitNode(node.left) ?: return null
+                val right = resolveUnitNode(node.right) ?: return null
+                val sign = if (node.operator == TokenType.Divide) -1 else 1
+                PhysicsValue(
+                    1.0,
+                    IntArray(7) { i -> left.dimensions[i] + sign * right.dimensions[i] },
+                    if (sign == 1) left.scale * right.scale else left.scale / right.scale,
+                    "${left.unitName}${if (sign == 1) "*" else "/"}${right.unitName}"
+                )
+            }
+        }
     }
 
     fun formatPhysicsValue(value: PhysicsValue): String {

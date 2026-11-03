@@ -1,0 +1,10 @@
+// Custom units used inside and outside formulas
+unit kph = 1000 m / 3600 s
+unit kn = 1852 m / 3600 s
+
+form WaktuTempuh(jarak, v) = jarak / v
+form KeKph(v) = v in kph
+
+kapal = 20 kn
+print KeKph(kapal)              // 37.04 kph
+print WaktuTempuh(37.04 km, 20 kn) in h  // ≈ 1.0 h (floating point)

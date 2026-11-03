@@ -4,18 +4,18 @@
 unit squareMeter = m^2
 unit leverMoment = N * m
 
-var airDensity = 1.225 kg / m^3
-var windSpeed = 35 m / s
-var dragCoefficient = 1.2
-var exposedArea = 850 squareMeter
-var leverArm = 18 m
+airDensity = 1.225 kg / m^3
+windSpeed = 35 m / s
+dragCoefficient = 1.2
+exposedArea = 850 squareMeter
+leverArm = 18 m
 
-var dynamicPressure = 0.5 * airDensity * windSpeed^2
-var designPressure = dynamicPressure * dragCoefficient
-var lateralForce = designPressure * exposedArea
-var bendingMoment = lateralForce * leverArm
-var windPowerTransfer = lateralForce * windSpeed
-var momentRatio = bendingMoment / 1000000 leverMoment
+dynamicPressure = 0.5 * airDensity * windSpeed^2
+designPressure = dynamicPressure * dragCoefficient
+lateralForce = designPressure * exposedArea
+bendingMoment = lateralForce * leverArm
+windPowerTransfer = lateralForce * windSpeed
+momentRatio = bendingMoment / 1000000 leverMoment
 
 print "Dynamic pressure: " + dynamicPressure
 print "Design pressure: " + designPressure

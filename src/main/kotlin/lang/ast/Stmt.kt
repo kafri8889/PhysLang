@@ -57,3 +57,25 @@ data class PrintStmt(val expr: Expr?): Stmt {
         return stmtVisitor.visitPrintStmt(this)
     }
 }
+
+/**
+ * Declare a single-line physics formula.
+ *
+ * Example: `form Force(m, a) = m * a`
+ *
+ * @property nameToken Formula name as token
+ * @property parameters Parameter name tokens, in declaration order
+ * @property body Expression evaluated when the formula is called
+ */
+data class FormDeclStmt(
+    val nameToken: Token,
+    val parameters: List<Token>,
+    val body: Expr
+): Stmt {
+    val name: String get() = nameToken.value
+    val parameterNames: List<String> get() = parameters.map { it.value }
+
+    override fun <R> accept(stmtVisitor: StmtVisitor<R>): R {
+        return stmtVisitor.visitFormDeclStmt(this)
+    }
+}

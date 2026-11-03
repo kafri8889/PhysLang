@@ -9,6 +9,7 @@ open class SemanticType {
     data object Boolean: SemanticType()
     data object Null: SemanticType()
     class NativeFunction(val function: RuntimeValue.NativeFunction): SemanticType()
+    class Formula(val formula: RuntimeValue.Formula): SemanticType()
     class Dimensions(val dim: IntArray): SemanticType()
     class PhysicsValue(val value: lang.ast.PhysicsValue): SemanticType()
 
@@ -19,6 +20,7 @@ fun SemanticType.displayName(): String = when (this) {
     is SemanticType.String -> "string"
     is SemanticType.Null -> "null"
     is SemanticType.NativeFunction -> "function"
+    is SemanticType.Formula -> "formula"
     is SemanticType.Dimensions -> "dimensions"
     is SemanticType.Unknown -> "unknown value"
     else -> "expression"

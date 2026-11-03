@@ -1,16 +1,16 @@
 // Feature: variable declaration
-// Use var to create a new variable.
-// Variables can be initialized with physical quantities, explicit null, or left uninitialized.
+// Assigning to a new name creates the variable (no 'var' keyword in v2).
+// Variables can hold physical quantities or an explicit null.
 
-var mass = 12 kg
-var gravity = 9.8 m / s^2
-var weight = mass * gravity
+mass = 12 kg
+gravity = 9.8 m / s^2
+weight = mass * gravity
 
 // Variable with explicit null
-var sensorValue = null
+sensorValue = null
 
-// Uninitialized variable (defaults to null)
-var unassigned
+// Placeholder that will be filled later
+unassigned = null
 
 print "Mass: " + mass
 print "Weight: " + weight

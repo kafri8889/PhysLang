@@ -1,0 +1,12 @@
+// Basic mechanics with single-line formulas (form)
+form Gaya(m, a) = m * a
+form Usaha(F, s) = F * s
+form Tekanan(F, A) = F / A
+form Ek(m, v) = 0.5 * m * v^2
+
+gaya = Gaya(10 kg, 2 m / s^2)
+print gaya                      // 20.0 N
+
+print Usaha(gaya, 5 m)          // 100.0 J
+print Tekanan(gaya, 4 m^2)      // 5.0 Pa
+print Ek(2 kg, 10 m / s)        // 100.0 J

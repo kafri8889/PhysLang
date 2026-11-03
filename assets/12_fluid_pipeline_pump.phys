@@ -4,17 +4,17 @@
 unit cubicMeterPerSecond = m^3 / s
 unit squareMeter = m^2
 
-var waterDensity = 1000 kg / m^3
-var volumeFlow = 2.4 cubicMeterPerSecond
-var pipeArea = 0.785 squareMeter
-var pressureLoss = 180000 Pa
-var operationTime = 24 h
+waterDensity = 1000 kg / m^3
+volumeFlow = 2.4 cubicMeterPerSecond
+pipeArea = 0.785 squareMeter
+pressureLoss = 180000 Pa
+operationTime = 24 h
 
-var flowVelocity = volumeFlow / pipeArea
-var dynamicPressure = 0.5 * waterDensity * flowVelocity^2
-var pumpPower = pressureLoss * volumeFlow
-var dailyEnergy = pumpPower * operationTime
-var pressureRatio = dynamicPressure / pressureLoss
+flowVelocity = volumeFlow / pipeArea
+dynamicPressure = 0.5 * waterDensity * flowVelocity^2
+pumpPower = pressureLoss * volumeFlow
+dailyEnergy = pumpPower * operationTime
+pressureRatio = dynamicPressure / pressureLoss
 
 print "Flow velocity: " + flowVelocity
 print "Dynamic pressure: " + dynamicPressure

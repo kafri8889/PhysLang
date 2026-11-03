@@ -1,0 +1,12 @@
+// Kinematics: velocity, acceleration, and conversion to km/h
+unit kph = 1000 m / 3600 s
+
+form Kecepatan(jarak, waktu) = jarak / waktu
+form Percepatan(dv, waktu) = dv / waktu
+form Jarak(v0, a, t) = v0 * t + 0.5 * a * t^2
+
+v = Kecepatan(100 m, 5 s)
+print v in kph                  // 72.0 kph
+
+print Percepatan(20 m / s, 4 s) // 5.0 m*s^-2
+print Jarak(2 m / s, 1 m / s^2, 4 s)  // 16.0 m

@@ -123,26 +123,16 @@ class PhysicsEvaluator(
     }
 
     override fun visitQuantityExpr(expr: QuantityExpr): RuntimeValue {
-        val unitName = when (val unit = expr.unit) {
-            is UnitNode.BaseUnit -> unit.name
-            else -> ""
-        }
+        val unit = currentEnvironment.resolveUnitNode(expr.unit)
+            ?: throw RuntimeException("Unknown unit in quantity: ${expr.unit}")
+        val numeric = (expr.value.accept(this) as PhysicsValue).value
 
-        var unitScale = currentEnvironment.getUnit(unitName)
-
-        if (unitScale == null) {
-            unitScale = PhysicsValue.unitRegistry[unitName]
-        }
-
-        val physicsValue = expr.value.accept(this)
-        physicsValue as PhysicsValue
-        val baseUnit = unitScale ?: PhysicsValue.zero
-
+        // The literal carries only the number; the unit scale is applied exactly once.
         return PhysicsValue(
-            value = physicsValue.value,
-            scale = baseUnit.value * baseUnit.scale,
-            dimensions = baseUnit.dimensions,
-            unitName = unitName
+            value = numeric,
+            scale = unit.scale,
+            dimensions = unit.dimensions,
+            unitName = unit.unitName
         )
     }
 
@@ -194,8 +184,30 @@ class PhysicsEvaluator(
         val callee = expr.callee.accept(this)
         val args = expr.arguments.map { it.accept(this) }
 
-        callee as RuntimeValue.NativeFunction
-        return callee.callable.call(this, args)
+        val (name, callable) = when (callee) {
+            is RuntimeValue.NativeFunction -> callee.name to callee.callable
+            is RuntimeValue.Formula -> callee.name to callee
+            else -> throw RuntimeException("Value is not a function or formula and cannot be called")
+        }
+
+        if (args.size != callable.arity()) {
+            throw RuntimeException("'$name' expects ${callable.arity()} arguments, but provided ${args.size}")
+        }
+
+        return callable.call(this, args)
+    }
+
+    /**
+     * Runs [block] with [environment] as the active scope, restoring the previous scope afterwards.
+     */
+    fun <T> withEnvironment(environment: Environment, block: () -> T): T {
+        val previousEnvironment = currentEnvironment
+        currentEnvironment = environment
+        try {
+            return block()
+        } finally {
+            currentEnvironment = previousEnvironment
+        }
     }
 
     override fun visitConversionExpr(expr: ConversionExpr): RuntimeValue {
@@ -253,5 +265,12 @@ class PhysicsEvaluator(
         } finally {
             currentEnvironment = previousEnvironment
         }
+    }
+
+    override fun visitFormDeclStmt(formDeclStmt: FormDeclStmt) {
+        currentEnvironment.putVar(
+            formDeclStmt.name,
+            RuntimeValue.Formula(formDeclStmt.name, formDeclStmt.parameterNames, formDeclStmt.body, currentEnvironment)
+        )
     }
 }

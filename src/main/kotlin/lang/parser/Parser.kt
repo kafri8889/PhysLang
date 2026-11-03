@@ -88,7 +88,7 @@ class Parser(
                             value = if (token.value.contains('.')) LiteralValue.DoubleVal(token)
                             else LiteralValue.IntVal(token)
                         ),
-                        unit = UnitNode.BaseUnit(unit)
+                        unit = parseUnitPower(UnitNode.BaseUnit(unit))
                     )
                 } else {
                     // Throw exception?
@@ -444,21 +444,102 @@ class Parser(
         return UnitDeclStmt(name, initializer)
     }
 
+    /**
+     * Binds an integer exponent directly to a quantity unit, so `4 m^2` means
+     * 4 square meters instead of (4 m)^2.
+     */
+    private fun parseUnitPower(base: UnitNode): UnitNode {
+        if (peek()?.tokenType != TokenType.Power) return base
+
+        val negative = lookup()?.tokenType == TokenType.Minus
+        val exponentToken = tokens.getOrNull(currentTokenIndex + if (negative) 2 else 1)
+
+        if (exponentToken?.tokenType != TokenType.NumberLiteral || exponentToken.value.contains('.')) {
+            return base
+        }
+
+        advance() // '^'
+        if (negative) advance() // '-'
+        advance() // exponent
+
+        val exponent = exponentToken.value.toInt()
+        return UnitNode.PowerUnit(base, if (negative) -exponent else exponent)
+    }
+
+    private fun reportAt(token: Token?, message: String) {
+        reporter.report(
+            Diagnostic(
+                type = DiagnosticType.ERROR,
+                message = message,
+                line = token?.line ?: 0,
+                column = token?.let { it.startColumn until it.endColumn } ?: (0..0)
+            )
+        )
+    }
+
+    /**
+     * `form Name(p1, p2, ...) = expression`
+     */
     fun parseFormStmt(): Stmt? {
-        advance() // consume "form"
+        val formToken = advance() // consume 'form'
 
-        val name = consume(TokenType.Identifier, { "Expected identifier after 'form', got '${it?.value}'" }) ?: return null
+        val name = peek()
+        if (name?.tokenType != TokenType.Identifier) {
+            reportAt(name ?: formToken, "Expected formula name after 'form', got '${name?.value}'")
+            return null
+        }
+        advance()
 
-        consume(TokenType.OpenBracket, { "Expected '(' after '${name.value}', got '${it?.value}'" }) ?: return null
+        if (peek()?.tokenType != TokenType.OpenParenthesis) {
+            reportAt(peek() ?: name, "Expected '(' after formula name '${name.value}', got '${peek()?.value}'")
+            return null
+        }
+        advance()
 
-        // todo parse arguments
+        val parameters = mutableListOf<Token>()
+        if (peek()?.tokenType != TokenType.CloseParenthesis) {
+            while (true) {
+                val parameter = peek()
+                if (parameter?.tokenType != TokenType.Identifier) {
+                    reportAt(parameter ?: name, "Expected parameter name in formula '${name.value}', got '${parameter?.value}'")
+                    return null
+                }
+                advance()
 
-        consume(TokenType.CloseBracket, { "Expected ')' after '${name.value}', got '${it?.value}'" }) ?: return null
-        consume(TokenType.Assign, { "Expected '=' after ')', got '${it?.value}'" }) ?: return null
+                if (parameters.any { it.value == parameter.value }) {
+                    reportAt(parameter, "Duplicate parameter '${parameter.value}' in formula '${name.value}'")
+                    return null
+                }
+                parameters.add(parameter)
 
-        val expression = parseExpression(0) ?: return null
+                if (peek()?.tokenType == TokenType.Comma) advance() else break
+            }
+        }
 
-        return FormDeclStmt(name, expression)
+        if (peek()?.tokenType != TokenType.CloseParenthesis) {
+            reportAt(peek() ?: name, "Expected ')' to close parameters of formula '${name.value}', got '${peek()?.value}'")
+            return null
+        }
+        advance()
+
+        if (peek()?.tokenType != TokenType.Assign) {
+            reportAt(peek() ?: name, "Expected '=' after parameters of formula '${name.value}', got '${peek()?.value}'")
+            return null
+        }
+        val assign = advance()
+
+        val body = parseExpression(0)
+        if (body == null) {
+            reportAt(assign, "Expected expression after '=' in formula '${name.value}'")
+            return null
+        }
+
+        if (peek() != null && peek()?.tokenType != TokenType.Eol && peek()?.tokenType != TokenType.Eof && peek()?.tokenType != TokenType.Comment) {
+            reportAt(peek(), "Unexpected token '${peek()?.value}' after formula body")
+            return null
+        }
+
+        return FormDeclStmt(name, parameters, body)
     }
 
     fun parsePrintStmt(): Stmt {

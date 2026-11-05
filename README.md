@@ -234,3 +234,7 @@ PhysLang is useful as a research artifact because it connects programming langua
 - Preserve strict dimensional analysis as the main design priority.
 - Prefer physics-focused features over general-purpose programming constructs.
 - Add tests for both valid calculations and invalid dimensional expressions.
+
+## License
+
+PhysLang is released under the [MIT License](LICENSE).

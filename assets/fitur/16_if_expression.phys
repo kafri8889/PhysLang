@@ -1,0 +1,29 @@
+// Feature: if as an expression
+// When the value of an if is used, 'else' is required and every branch
+// must produce the same type: same dimensions for quantities, or strings.
+
+mass = 2 kg
+height = 5 m
+
+// Single expression branches
+weightClass = if (mass > 1 kg) "heavy" else "light"
+print "Weight class: " + weightClass
+
+// The value of a block branch is its last expression
+potentialEnergy = if (height > 0 m) {
+    gravity = 9.8 m/s^2
+    mass * gravity * height
+} else {
+    0 J
+}
+print "Potential energy: " + potentialEnergy
+
+// if inside arithmetic, print, and function arguments
+print "Doubled length: " + 2 * if (height >= 5 m) 1 m else 2 m
+print if (mass == 2000 g) "Mass is exactly 2 kg" else "Mass is not 2 kg"
+print "Height in SI: " + SI(if (height < 10 m) height else 10 m)
+
+// Piecewise formula: the body of a form is an if expression
+form clampSpeed(v) = if (v > 30 m/s) 30 m/s else v
+print "Clamped 20 m/s: " + clampSpeed(20 m/s)
+print "Clamped 50 m/s: " + clampSpeed(50 m/s)

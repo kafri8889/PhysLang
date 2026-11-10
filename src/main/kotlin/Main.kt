@@ -167,7 +167,8 @@ class ExampleRunner(
         for (statement in statements) {
             reporter.clear()
 
-            statement.accept(SemanticAnalyzer(environment, reporter))
+            // Analyze in a child scope so placeholder values never overwrite runtime values (e.g. `x = x + 1 m`)
+            statement.accept(SemanticAnalyzer(Environment(environment), reporter))
 
             if (reporter.hasErrors()) {
                 reporter.printAll(source)

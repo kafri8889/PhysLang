@@ -48,7 +48,29 @@ class Lexer(
                 numberString += advance()
             }
         }
+        if (isExponentStart()) {
+            numberString += advance() // 'e' or 'E'
+            if (peek() == '+' || peek() == '-') {
+                numberString += advance()
+            }
+            while (peek()?.isDigit() == true) {
+                numberString += advance()
+            }
+        }
         return numberString
+    }
+
+    /**
+     * Scientific notation exponent such as `e3`, `E-6`, or `e+2`.
+     * A unit right after a number without space (e.g. `3eV`) is not an exponent because no digit follows `e`.
+     */
+    private fun isExponentStart(): Boolean {
+        if (peek() != 'e' && peek() != 'E') return false
+
+        val next = lookahead(1)
+        if (next?.isDigit() == true) return true
+
+        return (next == '+' || next == '-') && lookahead(2)?.isDigit() == true
     }
 
     fun parseIdentifier(): Pair<String, TokenType> {
@@ -56,7 +78,7 @@ class Lexer(
 
         do {
             iden += advance()
-        } while (peek()?.isLetterOrDigit() == true)
+        } while (peek()?.isLetterOrDigit() == true || peek() == '_')
 
         val tokenType = keywords[iden] ?: TokenType.Identifier
 
@@ -102,6 +124,18 @@ class Lexer(
         return content
     }
 
+    fun parseHashComment(): String {
+        var content = ""
+
+        advance() // consume '#'
+
+        while (peek() != '\n' && peek() != '\u0000' && peek() != null) {
+            content += advance()
+        }
+
+        return content
+    }
+
     fun lex(): List<Token> {
         while (currentGlobalPosition < source.length) {
             var tokenType: TokenType? = null
@@ -116,7 +150,7 @@ class Lexer(
                 }
                 peek() == '\r' -> advance()
                 peek()?.isWhitespace() == true -> advance()
-                peek()?.isLetter() == true -> {
+                peek()?.isLetter() == true || peek() == '_' -> {
                     val (s, t) = parseIdentifier()
 
                     tokenType = t
@@ -125,6 +159,10 @@ class Lexer(
                 peek()?.isDigit() ?: false -> {
                     tokenType = TokenType.NumberLiteral
                     value = parseNumber()
+                }
+                peek() == '#' -> {
+                    tokenType = TokenType.Comment
+                    value = parseHashComment()
                 }
                 peek() == '"' -> {
                     tokenType = TokenType.StringLiteral

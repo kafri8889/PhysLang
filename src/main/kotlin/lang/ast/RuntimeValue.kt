@@ -86,6 +86,11 @@ data class PhysicsValue(
             return "$value $unitName"
         }
 
+        // A plain number has no unit, so it must not be labeled with a dimensionless unit such as 'rad'
+        if (dimensions.all { it == 0 }) {
+            return "$value"
+        }
+
         val matchedUnit = unitRegistry.entries.find {
             it.value.dimensions.contentEquals(this.dimensions)
         }

@@ -1,0 +1,33 @@
+# Feature: compound assignment, scientific notation, sqrt, underscores, and comments
+# Both '#' and '//' start a comment, also at the end of a line.
+
+# Scientific notation for physical constants
+gravitational_constant = 6.674e-11 N * m^2 / kg^2
+earth_mass = 5.972e24 kg
+earth_radius = 6.371e6 m
+
+surface_gravity = gravitational_constant * earth_mass / earth_radius^2   // ~9.82 m/s^2
+print "Surface gravity: " + surface_gravity
+
+# Compound assignment: x += y means x = x + y, with the same dimension rules
+distance = 2 km
+distance += 500 m
+distance -= 100 m
+print "Distance: " + distance
+
+speed = 10 m/s
+speed *= 3
+speed /= 2
+print "Speed: " + speed
+
+label = "Status: "
+label += "ready"
+print label
+
+# sqrt halves every dimension power, so its result is a normal quantity
+form hypotenuse(a, b) = sqrt(a^2 + b^2)
+diagonal = hypotenuse(3 m, 4 m)
+print "Diagonal + 1 m: " + (diagonal + 1 m)
+
+# Plain numbers are shown without a unit
+print "Ratio: " + (5 m / 2 m)

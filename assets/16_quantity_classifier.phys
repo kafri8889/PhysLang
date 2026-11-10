@@ -1,0 +1,37 @@
+// Quantity classifier based on physical dimensions
+// Scenario:
+// A lab notebook receives measurements in many units. The 'is' condition
+// classifies each measurement by its dimensions, regardless of its scale.
+
+unit kph = 1000 m / 3600 s
+
+form classify(q) = if (q is N) {
+    "force"
+} else if (q is J) {
+    "energy"
+} else if (q is W) {
+    "power"
+} else if (q is Pa) {
+    "pressure"
+} else if (q is m/s) {
+    "velocity"
+} else if (q is m/s^2) {
+    "acceleration"
+} else {
+    "unclassified"
+}
+
+print "3 kN -> " + classify(3 kN)
+print "2 kWh -> " + classify(2 kWh)
+print "5 MW -> " + classify(5 MW)
+print "1 atm -> " + classify(1 atm)
+print "90 kph -> " + classify(90 kph)
+print "9.8 m/s^2 -> " + classify(9.8 m/s^2)
+print "12 kg*m/s^2 -> " + classify(12 kg * m / s^2)
+print "7 mol -> " + classify(7 mol)
+
+// Narrowing: only the branch selected by 'is' is checked for each call,
+// so a velocity is shown in kph and a length in km by the same formula
+form display(q) = if (q is m/s) q in kph else q in km
+print "Velocity 25 m/s: " + display(25 m/s)
+print "Length 1500 m: " + display(1500 m)

@@ -1,0 +1,34 @@
+// Water phase state at atmospheric pressure
+// Scenario:
+// The phase of water is decided from its temperature using inclusive ranges,
+// then nested conditions refine the description of the liquid phase.
+
+meltingPoint = 273.15 K
+boilingPoint = 373.15 K
+
+form phase(T) = if (T < meltingPoint) "solid (ice)" else if (T between meltingPoint and boilingPoint) "liquid" else "gas (steam)"
+
+print "250 K -> " + phase(250 K)
+print "300 K -> " + phase(300 K)
+print "373.15 K -> " + phase(373.15 K)
+print "400 K -> " + phase(400 K)
+
+temperature = 310 K
+
+if (temperature between meltingPoint and boilingPoint) {
+    if (temperature between 309 K and 311 K) {
+        print "Liquid, around human body temperature"
+    } else if (temperature > 350 K) {
+        print "Liquid, close to boiling"
+    } else {
+        print "Liquid"
+    }
+} else {
+    print "Not liquid"
+}
+
+// Heat needed to reach the boiling point, only when it is still below it
+specificHeat = 4186 J / (kg * K)
+mass = 2 kg
+heatToBoil = if (temperature < boilingPoint) mass * specificHeat * (boilingPoint - temperature) else 0 J
+print "Heat needed to reach boiling: " + (heatToBoil in kJ)

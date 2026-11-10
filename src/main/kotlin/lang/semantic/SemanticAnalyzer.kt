@@ -5,6 +5,7 @@ import lang.core.Environment
 import lang.error.Diagnostic
 import lang.error.DiagnosticType
 import lang.error.ErrorReporter
+import lang.lexer.Token
 import lang.lexer.TokenType
 
 class SemanticAnalyzer(
@@ -324,6 +325,7 @@ class SemanticAnalyzer(
             if (value !is SemanticType.Unknown) {
                 when (value) {
                     is SemanticType.PhysicsValue -> currentEnvironment.putVar(expr.nameToken.value, value.value)
+                    is SemanticType.String -> currentEnvironment.putVar(expr.nameToken.value, StringValue(""))
                     is SemanticType.Null -> currentEnvironment.putVar(expr.nameToken.value, null)
                     else -> currentEnvironment.putVar(expr.nameToken.value, null)
                 }
@@ -345,6 +347,7 @@ class SemanticAnalyzer(
 
         when (value) {
             is SemanticType.PhysicsValue -> currentEnvironment.putVar(expr.nameToken.value, value.value)
+            is SemanticType.String -> currentEnvironment.putVar(expr.nameToken.value, StringValue(""))
             is SemanticType.Null -> currentEnvironment.putVar(expr.nameToken.value, null)
             else -> currentEnvironment.putVar(expr.nameToken.value, null)
         }
@@ -412,7 +415,42 @@ class SemanticAnalyzer(
             return args[0]
         }
 
-        // todo: check for sqrt func
+        if (callee.function.name == "sqrt") {
+            val argument = args.firstOrNull()
+
+            if (argument is SemanticType.Unknown) {
+                return SemanticType.Unknown
+            }
+
+            if (argument !is SemanticType.PhysicsValue) {
+                reporter.report(
+                    Diagnostic(
+                        message = "Type Error: The 'sqrt()' function only accepts physical quantities, got ${argument?.displayName()}.",
+                        type = DiagnosticType.ERROR,
+                        line = expr.parenToken.line,
+                        column = expr.parenToken.startColumn until expr.parenToken.endColumn
+                    )
+                )
+
+                return SemanticType.Unknown
+            }
+
+            // The square root halves every dimension power, so each power must be even (e.g. m^2 -> m, but not m^3)
+            if (argument.value.dimensions.any { it % 2 != 0 }) {
+                reporter.report(
+                    Diagnostic(
+                        message = "Dimension Error: 'sqrt()' requires even dimension powers, got '${argument.value.dimensionsToString()}'.",
+                        type = DiagnosticType.ERROR,
+                        line = expr.parenToken.line,
+                        column = expr.parenToken.startColumn until expr.parenToken.endColumn
+                    )
+                )
+
+                return SemanticType.Unknown
+            }
+
+            return physicsType(IntArray(7) { i -> argument.value.dimensions[i] / 2 })
+        }
 
         return SemanticType.NativeFunction(callee.function)
     }
@@ -470,6 +508,242 @@ class SemanticAnalyzer(
         )
 
         return SemanticType.Unknown
+    }
+
+    override fun visitIfExpr(expr: IfExpr): SemanticType {
+        val staticResult = analyzeCondition(expr.condition)
+
+        if (staticResult != null) {
+            // Dimensional narrowing: the dimensions are known statically, so only the selected branch is analyzed
+            val selectedBranch = if (staticResult) expr.thenBranch else expr.elseBranch
+            val selectedType = selectedBranch?.let { analyzeBranch(it, expr) }
+
+            return if (expr.isExpression) selectedType ?: SemanticType.Unknown else SemanticType.Unknown
+        }
+
+        // Every branch is analyzed, even the one that will not be executed
+        val thenType = analyzeBranch(expr.thenBranch, expr)
+        val elseType = expr.elseBranch?.let { analyzeBranch(it, expr) }
+
+        if (!expr.isExpression) {
+            return SemanticType.Unknown
+        }
+
+        return unifyBranchTypes(thenType, elseType ?: SemanticType.Unknown, expr.ifToken)
+    }
+
+    /**
+     * Validates the physical relation of an if condition.
+     *
+     * @return The static result of an `is` check, or null when the condition is only known at runtime
+     */
+    private fun analyzeCondition(condition: Condition): Boolean? {
+        when (condition) {
+            is Condition.Comparison -> {
+                val operatorToken = condition.operatorToken
+                val operands = requireQuantities(
+                    listOf(condition.left.accept(this), condition.right.accept(this)),
+                    operatorToken
+                )
+
+                if (operands != null) {
+                    val (left, right) = operands
+
+                    if (!left.dimensions.contentEquals(right.dimensions)) {
+                        reportAt(
+                            operatorToken,
+                            "Dimension mismatch in comparison: cannot compare '${dimensionName(left.dimensions)}' with '${dimensionName(right.dimensions)}'."
+                        )
+                    }
+                }
+
+                val toleranceExpr = condition.tolerance ?: return null
+                val tolerance = requireQuantities(listOf(toleranceExpr.accept(this)), operatorToken, "within")
+                    ?.first()
+                    ?: return null
+
+                val expected = operands?.first() ?: return null
+                if (!tolerance.dimensions.contentEquals(expected.dimensions)) {
+                    reportAt(
+                        operatorToken,
+                        "Tolerance dimension mismatch: 'within' expects '${dimensionName(expected.dimensions)}', got '${dimensionName(tolerance.dimensions)}'."
+                    )
+                }
+
+                return null
+            }
+            is Condition.Between -> {
+                val operands = requireQuantities(
+                    listOf(condition.value.accept(this), condition.lower.accept(this), condition.upper.accept(this)),
+                    condition.betweenToken
+                ) ?: return null
+
+                val (value, lower, upper) = operands
+
+                if (!lower.dimensions.contentEquals(value.dimensions) || !upper.dimensions.contentEquals(value.dimensions)) {
+                    reportAt(
+                        condition.betweenToken,
+                        "Dimension mismatch in range: cannot check '${dimensionName(value.dimensions)}' between '${dimensionName(lower.dimensions)}' and '${dimensionName(upper.dimensions)}'."
+                    )
+                }
+
+                return null
+            }
+            is Condition.DimensionCheck -> {
+                val value = condition.value.accept(this)
+
+                if (!isUnitExpression(condition.target)) {
+                    reportAt(
+                        condition.isToken,
+                        "The right side of 'is' must be a unit expression such as N, m/s or kg*m/s^2."
+                    )
+                    return null
+                }
+
+                val target = condition.target.accept(this)
+
+                val operands = requireQuantities(listOf(value, target), condition.isToken) ?: return null
+
+                return operands[0].dimensions.contentEquals(operands[1].dimensions)
+            }
+        }
+    }
+
+    /**
+     * Ensures every operand of a condition is a physics quantity.
+     *
+     * @return The quantities, or null when an operand is invalid or already reported as unknown
+     */
+    private fun requireQuantities(
+        operands: List<SemanticType>,
+        operatorToken: Token,
+        operatorName: String = operatorToken.value
+    ): List<PhysicsValue>? {
+        if (operands.any { it is SemanticType.Null }) {
+            reportAt(operatorToken, "Operator '$operatorName' cannot be applied to null operand.")
+            return null
+        }
+
+        if (operands.any { it is SemanticType.Unknown }) {
+            return null
+        }
+
+        if (operands.any { it !is SemanticType.PhysicsValue }) {
+            reportAt(
+                operatorToken,
+                "Comparison '$operatorName' requires physics quantities, got ${operands.joinToString(" and ") { it.displayName() }}."
+            )
+            return null
+        }
+
+        return operands.map { (it as SemanticType.PhysicsValue).value }
+    }
+
+    /**
+     * A pure unit expression only contains units combined with `*`, `/` and integer `^`, e.g. `kg*m/s^2`.
+     */
+    private fun isUnitExpression(expr: Expr): Boolean {
+        return when (expr) {
+            is IdentifierExpr -> !currentEnvironment.hasVar(expr.name) && currentEnvironment.hasUnit(expr.name)
+            is LiteralExpr -> (expr.value as? LiteralValue.IntVal)?.value == 1 // `1` is dimensionless, as in 1/s
+            is BinaryExpr -> when (expr.operator) {
+                TokenType.Multiply,
+                TokenType.Divide -> isUnitExpression(expr.left) && isUnitExpression(expr.right)
+                TokenType.Power -> isUnitExpression(expr.left) && isIntegerLiteral(expr.right)
+                else -> false
+            }
+            else -> false
+        }
+    }
+
+    private fun isIntegerLiteral(expr: Expr): Boolean {
+        return when (expr) {
+            is LiteralExpr -> expr.value is LiteralValue.IntVal
+            is UnaryExpr -> expr.operator == TokenType.Minus && isIntegerLiteral(expr.right)
+            else -> false
+        }
+    }
+
+    /**
+     * Analyzes a branch in its own scope, the type of a block is the type of its last expression.
+     */
+    private fun analyzeBranch(branch: IfBranch, expr: IfExpr): SemanticType {
+        return when (branch) {
+            is IfBranch.ExprBranch -> branch.expr.accept(this)
+            is IfBranch.BlockBranch -> {
+                val previousEnvironment = currentEnvironment
+
+                try {
+                    currentEnvironment = Environment(previousEnvironment)
+
+                    var lastType: SemanticType? = null
+
+                    for (stmt in branch.block.statements) {
+                        lastType = if (stmt is ExprStmt) {
+                            stmt.expr?.accept(this)
+                        } else {
+                            stmt.accept(this)
+                            null
+                        }
+                    }
+
+                    if (expr.isExpression && lastType == null) {
+                        reportAt(expr.ifToken, "A block used as an if value must end with an expression.")
+                        return SemanticType.Unknown
+                    }
+
+                    lastType ?: SemanticType.Unknown
+                } finally {
+                    currentEnvironment = previousEnvironment
+                }
+            }
+        }
+    }
+
+    /**
+     * All branches of an if used as a value must produce the same type and dimensions.
+     */
+    private fun unifyBranchTypes(thenType: SemanticType, elseType: SemanticType, ifToken: Token): SemanticType {
+        if (thenType is SemanticType.Unknown || elseType is SemanticType.Unknown) return SemanticType.Unknown
+        if (thenType is SemanticType.Null) return elseType
+        if (elseType is SemanticType.Null) return thenType
+
+        if (thenType is SemanticType.PhysicsValue && elseType is SemanticType.PhysicsValue) {
+            if (thenType.value.dimensions.contentEquals(elseType.value.dimensions)) {
+                return thenType
+            }
+
+            reportAt(
+                ifToken,
+                "Dimension mismatch between if branches: '${dimensionName(thenType.value.dimensions)}' vs '${dimensionName(elseType.value.dimensions)}'."
+            )
+            return SemanticType.Unknown
+        }
+
+        if (thenType is SemanticType.String && elseType is SemanticType.String) {
+            return SemanticType.String
+        }
+
+        reportAt(ifToken, "Incompatible if branch types: ${thenType.displayName()} and ${elseType.displayName()}.")
+        return SemanticType.Unknown
+    }
+
+    private fun dimensionName(dimensions: IntArray): String {
+        if (dimensions.all { it == 0 }) return "dimensionless"
+
+        return currentEnvironment.getUnitByDimensions(dimensions)?.first
+            ?: PhysicsValue(0.0, dimensions).dimensionsToString()
+    }
+
+    private fun reportAt(token: Token, message: String) {
+        reporter.report(
+            Diagnostic(
+                message = message,
+                type = DiagnosticType.ERROR,
+                line = token.line,
+                column = token.startColumn until token.endColumn
+            )
+        )
     }
 
     override fun visitExprStmt(exprStmt: ExprStmt) {

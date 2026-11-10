@@ -85,7 +85,7 @@ class Parser(
 
                     QuantityExpr(
                         value = LiteralExpr(
-                            value = if (token.value.contains('.')) LiteralValue.DoubleVal(token)
+                            value = if (isDecimalLiteral(token.value)) LiteralValue.DoubleVal(token)
                             else LiteralValue.IntVal(token)
                         ),
                         unit = parseUnitPower(UnitNode.BaseUnit(unit))
@@ -93,7 +93,7 @@ class Parser(
                 } else {
                     // Throw exception?
                     LiteralExpr(
-                        value = if (token.value.contains('.')) LiteralValue.DoubleVal(token)
+                        value = if (isDecimalLiteral(token.value)) LiteralValue.DoubleVal(token)
                         else LiteralValue.IntVal(token)
                     )
                 }
@@ -118,6 +118,9 @@ class Parser(
             }
             TokenType.Null -> {
                 LiteralExpr(LiteralValue.NullVal(token))
+            }
+            TokenType.If -> {
+                parseIf(token, isExpression = true)
             }
             else -> null
         }
@@ -162,10 +165,11 @@ class Parser(
                     val binaryExpr = BinaryExpr(
                         left = left,
                         operatorToken = when (token.tokenType) {
-                            TokenType.PlusAssign,
-                            TokenType.MinusAssign,
-                            TokenType.MultiplyAssign,
-                            TokenType.DivideAssign -> token
+                            // `x += y` is evaluated as `x = x + y`, keeping the original token for diagnostics
+                            TokenType.PlusAssign -> token.copy(tokenType = TokenType.Plus)
+                            TokenType.MinusAssign -> token.copy(tokenType = TokenType.Minus)
+                            TokenType.MultiplyAssign -> token.copy(tokenType = TokenType.Multiply)
+                            TokenType.DivideAssign -> token.copy(tokenType = TokenType.Divide)
                             else -> {
                                 reporter.report(
                                     Diagnostic(
@@ -310,6 +314,7 @@ class Parser(
             TokenType.Print -> parsePrintStmt()
             TokenType.Unit -> parseUnitDecl()
             TokenType.Form -> parseFormStmt()
+            TokenType.If -> parseIfStmt()
             TokenType.OpenBracket -> parseBlockStmt()
             else -> parseExprStmt()
         }
@@ -454,7 +459,7 @@ class Parser(
         val negative = lookup()?.tokenType == TokenType.Minus
         val exponentToken = tokens.getOrNull(currentTokenIndex + if (negative) 2 else 1)
 
-        if (exponentToken?.tokenType != TokenType.NumberLiteral || exponentToken.value.contains('.')) {
+        if (exponentToken?.tokenType != TokenType.NumberLiteral || isDecimalLiteral(exponentToken.value)) {
             return base
         }
 
@@ -464,6 +469,13 @@ class Parser(
 
         val exponent = exponentToken.value.toInt()
         return UnitNode.PowerUnit(base, if (negative) -exponent else exponent)
+    }
+
+    /**
+     * Numbers with a fraction or a scientific exponent (`1.5`, `2e3`) are decimals
+     */
+    private fun isDecimalLiteral(value: String): Boolean {
+        return value.contains('.') || value.contains('e') || value.contains('E')
     }
 
     private fun reportAt(token: Token?, message: String) {
@@ -542,6 +554,198 @@ class Parser(
         return FormDeclStmt(name, parameters, body)
     }
 
+    /**
+     * `if` at the start of a statement, `else` is optional.
+     */
+    fun parseIfStmt(): Stmt? {
+        val ifToken = advance()!! // consume 'if'
+
+        val ifExpr = parseIf(ifToken, isExpression = false) ?: return null
+
+        val next = peek()
+        if (
+            next != null &&
+            next.tokenType != TokenType.Eol &&
+            next.tokenType != TokenType.Eof &&
+            next.tokenType != TokenType.Comment &&
+            next.tokenType != TokenType.CloseBracket
+        ) {
+            reportAt(next, "Unexpected token '${next.value}' after if statement")
+            return null
+        }
+
+        return ExprStmt(ifExpr)
+    }
+
+    /**
+     * `if (condition) branch else branch`, where `else if` is an else branch holding another if.
+     *
+     * @param ifToken The already consumed `if` token
+     * @param isExpression True when the value is used, then `else` is required
+     */
+    private fun parseIf(ifToken: Token, isExpression: Boolean): IfExpr? {
+        if (peek()?.tokenType != TokenType.OpenParenthesis) {
+            reportAt(peek() ?: ifToken, "Expected '(' after 'if', got '${peek()?.value}'")
+            return null
+        }
+        advance()
+
+        val condition = parseCondition(ifToken) ?: return null
+
+        if (peek()?.tokenType != TokenType.CloseParenthesis) {
+            reportAt(peek() ?: ifToken, "Expected ')' to close if condition, got '${peek()?.value}'")
+            return null
+        }
+
+        advance()
+
+        skipLineBreaks()
+
+        val thenBranch = parseBranch(ifToken) ?: return null
+
+        // `else` may be placed on the next line, otherwise the line breaks are left untouched
+        val indexBeforeElse = currentTokenIndex
+        skipLineBreaks()
+
+        if (peek()?.tokenType != TokenType.Else) {
+            currentTokenIndex = indexBeforeElse
+
+            if (isExpression) {
+                reportAt(ifToken, "'if' used as an expression must have an 'else' branch")
+                return null
+            }
+
+            return IfExpr(ifToken, condition, thenBranch, null, isExpression)
+        }
+
+        val elseToken = advance()!! // consume 'else'
+
+        skipLineBreaks()
+
+        val elseBranch = if (peek()?.tokenType == TokenType.If) {
+            val nestedIfToken = advance()!!
+            IfBranch.ExprBranch(parseIf(nestedIfToken, isExpression) ?: return null)
+        } else {
+            parseBranch(elseToken) ?: return null
+        }
+
+        return IfExpr(ifToken, condition, thenBranch, elseBranch, isExpression)
+    }
+
+    /**
+     * Physical relation inside `if (...)`:
+     * `a < b`, `a == b within tolerance`, `a between low and high`, `a is unit`
+     */
+    private fun parseCondition(ifToken: Token): Condition? {
+        if (peek()?.tokenType == TokenType.CloseParenthesis) {
+            reportAt(peek(), "Expected condition inside 'if (...)', got empty condition")
+            return null
+        }
+
+        // Comparison operators, 'between', and 'is' have no precedence, so the expression stops before them
+        val left = parseExpression(0) ?: return null
+
+        val operator = peek()
+
+        return when (operator?.tokenType) {
+            TokenType.Less,
+            TokenType.LessEqual,
+            TokenType.Greater,
+            TokenType.GreaterEqual,
+            TokenType.Equals,
+            TokenType.NotEqual -> {
+                advance()
+
+                val right = parseExpression(0) ?: return null
+
+                if (peek()?.tokenType != TokenType.Within) {
+                    return Condition.Comparison(left, operator, right)
+                }
+
+                val withinToken = advance()!!
+                if (operator.tokenType != TokenType.Equals && operator.tokenType != TokenType.NotEqual) {
+                    reportAt(withinToken, "'within' can only follow '==' or '!=', got '${operator.value}'")
+                    return null
+                }
+
+                val tolerance = parseExpression(0) ?: return null
+
+                Condition.Comparison(left, operator, right, tolerance)
+            }
+            TokenType.Between -> {
+                advance()
+
+                val lower = parseExpression(0) ?: return null
+
+                if (peek()?.tokenType != TokenType.And) {
+                    reportAt(peek() ?: operator, "Expected 'and' between range bounds, got '${peek()?.value}'")
+                    return null
+                }
+                advance()
+
+                val upper = parseExpression(0) ?: return null
+
+                Condition.Between(left, operator, lower, upper)
+            }
+            TokenType.Is -> {
+                advance()
+
+                val target = parseExpression(0) ?: return null
+
+                Condition.DimensionCheck(left, operator, target)
+            }
+            else -> {
+                reportAt(
+                    operator ?: ifToken,
+                    "Expected comparison operator (<, <=, >, >=, ==, !=), 'between', or 'is' in if condition, got '${operator?.value}'"
+                )
+                null
+            }
+        }
+    }
+
+    /**
+     * Branch of an if, either `{ ... }` or a single expression.
+     */
+    private fun parseBranch(ownerToken: Token): IfBranch? {
+        val token = peek()
+
+        return when (token?.tokenType) {
+            TokenType.OpenBracket -> {
+                val block = parseBlockStmt() as? BlockStmt ?: return null
+
+                IfBranch.BlockBranch(block)
+            }
+            TokenType.Print,
+            TokenType.Unit,
+            TokenType.Form -> {
+                reportAt(token, "Statement '${token.value}' in an if branch must be wrapped in '{ }'")
+                null
+            }
+            null,
+            TokenType.Eof,
+            TokenType.Else,
+            TokenType.CloseBracket -> {
+                reportAt(token ?: ownerToken, "Expected expression or '{' after '${ownerToken.value}', got '${token?.value}'")
+                null
+            }
+            else -> {
+                val expr = parseExpression(0) ?: return null
+
+                IfBranch.ExprBranch(expr)
+            }
+        }
+    }
+
+    /**
+     * Skip eol and comment, but never eof
+     */
+    private fun skipLineBreaks() {
+        while (peek()?.tokenType == TokenType.Eol || peek()?.tokenType == TokenType.Comment) {
+            advance()
+        }
+    }
+
     fun parsePrintStmt(): Stmt {
         advance() // consume "print"
         val expr = parseExpression(0)
@@ -555,7 +759,7 @@ class Parser(
         val expr = parseExpression(0) ?: return null
 
         // Check apakah after expression masih ada token liar di baris yang sama
-        if (peek() != null && peek()?.tokenType != TokenType.Eol && peek()?.tokenType != TokenType.Eof) {
+        if (peek() != null && peek()?.tokenType != TokenType.Eol && peek()?.tokenType != TokenType.Eof && peek()?.tokenType != TokenType.Comment) {
             reporter.report(
                 Diagnostic(
                     message = "Unexpected token '${peek()?.value}' after expression",

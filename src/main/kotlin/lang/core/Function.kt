@@ -30,6 +30,10 @@ class SqrtFunction : Callable {
     override fun call(evaluator: PhysicsEvaluator, arguments: List<RuntimeValue>): RuntimeValue {
         val argument = arguments[0] as PhysicsValue
 
+        if (argument.dimensions.any { it % 2 != 0 }) {
+            throw RuntimeException("'sqrt()' requires even dimension powers, got '${argument.dimensionsToString()}'")
+        }
+
         return PhysicsValue(
             value = sqrt(argument.scaledValue),
             dimensions = argument.dimensions.map { it / 2 }.toIntArray(),

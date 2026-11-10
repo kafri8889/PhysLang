@@ -1,0 +1,12 @@
+// This example intentionally fails semantic analysis.
+// A length cannot be compared with a mass,
+// and both branches of an if value must have the same dimensions.
+
+length = 5 m
+mass = 2 kg
+
+if (length > mass) {
+    print "Invalid comparison"
+}
+
+result = if (length > 1 m) 3 m/s else 4 kg

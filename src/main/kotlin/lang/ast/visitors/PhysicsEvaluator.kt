@@ -3,6 +3,8 @@ package lang.ast.visitors
 import lang.ast.*
 import lang.core.Environment
 import lang.lexer.TokenType
+import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.pow
 
 class PhysicsEvaluator(
@@ -224,6 +226,102 @@ class PhysicsEvaluator(
             scale = targetScale,
             unitName = unitName
         )
+    }
+
+    override fun visitIfExpr(expr: IfExpr): RuntimeValue {
+        val branch = if (evaluateCondition(expr.condition)) expr.thenBranch else expr.elseBranch
+
+        return branch?.let { evaluateBranch(it, expr.isExpression) } ?: RuntimeValue.NullValue
+    }
+
+    // Relative tolerance for '==' and '!=' without 'within', absorbs floating point rounding
+    private val equalityRelativeTolerance = 1e-9
+
+    private fun evaluateCondition(condition: Condition): Boolean {
+        return when (condition) {
+            is Condition.Comparison -> {
+                val operator = condition.operatorToken.value
+                val left = condition.left.accept(this).asQuantity(operator).scaledValue
+                val right = condition.right.accept(this).asQuantity(operator).scaledValue
+
+                when (condition.operator) {
+                    TokenType.Less -> left < right
+                    TokenType.LessEqual -> left <= right
+                    TokenType.Greater -> left > right
+                    TokenType.GreaterEqual -> left >= right
+                    TokenType.Equals -> quantitiesEqual(left, right, condition.tolerance)
+                    TokenType.NotEqual -> !quantitiesEqual(left, right, condition.tolerance)
+                    else -> throw RuntimeException("Unsupported comparison operator '$operator'")
+                }
+            }
+            is Condition.Between -> {
+                val value = condition.value.accept(this).asQuantity("between")
+                val lower = condition.lower.accept(this).asQuantity("between")
+                val upper = condition.upper.accept(this).asQuantity("between")
+
+                if (lower.scaledValue > upper.scaledValue) {
+                    throw RuntimeException("Invalid range: lower bound $lower is greater than upper bound $upper")
+                }
+
+                value.scaledValue >= lower.scaledValue && value.scaledValue <= upper.scaledValue
+            }
+            is Condition.DimensionCheck -> {
+                val value = condition.value.accept(this).asQuantity("is")
+                val target = condition.target.accept(this).asQuantity("is")
+
+                value.dimensions.contentEquals(target.dimensions)
+            }
+        }
+    }
+
+    private fun quantitiesEqual(left: Double, right: Double, tolerance: Expr?): Boolean {
+        if (tolerance == null) {
+            if (left == right) return true
+            if (left.isInfinite() || right.isInfinite()) return false
+
+            return abs(left - right) <= equalityRelativeTolerance * max(abs(left), abs(right))
+        }
+
+        val margin = tolerance.accept(this).asQuantity("within")
+        if (margin.scaledValue < 0) {
+            throw RuntimeException("Tolerance after 'within' must not be negative, got $margin")
+        }
+
+        return abs(left - right) <= margin.scaledValue
+    }
+
+    /**
+     * Statement blocks run like a normal block, expression blocks return their last expression.
+     */
+    private fun evaluateBranch(branch: IfBranch, isExpression: Boolean): RuntimeValue {
+        return when (branch) {
+            is IfBranch.ExprBranch -> branch.expr.accept(this)
+            is IfBranch.BlockBranch -> {
+                if (!isExpression) {
+                    branch.block.accept(this)
+                    return RuntimeValue.NullValue
+                }
+
+                withEnvironment(Environment(currentEnvironment)) {
+                    val statements = branch.block.statements
+                    statements.dropLast(1).forEach { it.accept(this) }
+
+                    when (val last = statements.lastOrNull()) {
+                        is ExprStmt -> last.expr?.accept(this) ?: RuntimeValue.NullValue
+                        null -> RuntimeValue.NullValue
+                        else -> {
+                            last.accept(this)
+                            RuntimeValue.NullValue
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun RuntimeValue.asQuantity(operator: String): PhysicsValue {
+        return this as? PhysicsValue
+            ?: throw RuntimeException("Operator '$operator' requires physics quantities, got $this")
     }
 
     override fun visitExprStmt(exprStmt: ExprStmt) {

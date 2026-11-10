@@ -73,8 +73,9 @@ class PhysCli(
                 continue
             }
 
+            // Analyze in a child scope so placeholder values never overwrite runtime values (e.g. `x = x + 1 m`)
             val analyzer = SemanticAnalyzer(
-                environment = environment,
+                environment = Environment(environment),
                 reporter = reporter
             )
 

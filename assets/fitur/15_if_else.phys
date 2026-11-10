@@ -1,0 +1,51 @@
+// Feature: if / else if / else statement
+// The condition is always a physical relation, both sides must have the same dimensions.
+// Quantities are compared in base SI scale, so 1 km is greater than 500 m.
+
+distance = 1 km
+limit = 500 m
+
+if (distance > limit) {
+    print "Distance exceeds the limit"
+}
+
+if (distance < limit) {
+    print "This line is never printed"
+} else {
+    print "Distance is not below the limit"
+}
+
+speed = 72 km/h
+
+if (speed < 10 m/s) {
+    print "Slow"
+} else if (speed < 30 m/s) {
+    print "Moderate"
+} else {
+    print "Fast"
+}
+
+// All comparison operators: <, <=, >, >=, ==, !=
+if (1000 mm == 1 m) {
+    print "1000 mm == 1 m"
+}
+
+if (1 h != 59 min) {
+    print "1 h != 59 min"
+}
+
+if (60 s <= 1 min) {
+    print "60 s <= 1 min"
+}
+
+if (2 kg >= 2000 g) {
+    print "2 kg >= 2000 g"
+}
+
+// 'else' may also be placed on the next line
+if (0.1 m + 0.2 m == 0.3 m) {
+    print "Floating point rounding is absorbed by '=='"
+}
+else {
+    print "This line is never printed"
+}

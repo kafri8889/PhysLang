@@ -1,0 +1,31 @@
+// Structural load check on a steel rod
+// Scenario:
+// A steel rod with a 2 cm^2 cross section carries an axial load.
+// Its stress is compared to the yield strength (250 MPa) to classify the safety state.
+
+unit yieldStrength = 250 MPa
+
+area = 2 cm^2
+designLimit = 0.6 * yieldStrength
+warningLimit = 0.9 * yieldStrength
+
+form stress(load) = load / area
+
+form safetyState(load) = if (stress(load) <= designLimit) {
+    "SAFE"
+} else if (stress(load) <= warningLimit) {
+    "WARNING"
+} else if (stress(load) == yieldStrength within 1 MPa) {
+    "CRITICAL: at yield point"
+} else if (stress(load) < yieldStrength) {
+    "CRITICAL"
+} else {
+    "FAILED: plastic deformation"
+}
+
+print "Stress at 20 kN: " + (stress(20 kN) in MPa)
+print "20 kN -> " + safetyState(20 kN)
+print "40 kN -> " + safetyState(40 kN)
+print "46 kN -> " + safetyState(46 kN)
+print "50 kN -> " + safetyState(50 kN)
+print "60 kN -> " + safetyState(60 kN)

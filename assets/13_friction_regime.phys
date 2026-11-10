@@ -1,0 +1,34 @@
+// Static vs kinetic friction regime
+// Scenario:
+// A 50 kg crate rests on a floor with static friction coefficient 0.5
+// and kinetic friction coefficient 0.3. Gravity is 10 m/s^2.
+// The friction force is a piecewise formula: while the push does not exceed the
+// maximum static friction, friction cancels the push; otherwise kinetic friction applies.
+
+unit gravity = 10 m / s^2
+
+mass = 50 kg
+staticCoefficient = 0.5
+kineticCoefficient = 0.3
+
+normalForce = mass * gravity
+maxStaticFriction = staticCoefficient * normalForce
+kineticFriction = kineticCoefficient * normalForce
+
+form friction(push) = if (push <= maxStaticFriction) push else kineticFriction
+form acceleration(push) = (push - friction(push)) / mass
+
+smallPush = 200 N
+largePush = 400 N
+
+print "Maximum static friction: " + maxStaticFriction
+print "Friction for 200 N push: " + friction(smallPush)
+print "Friction for 400 N push: " + friction(largePush)
+print "Acceleration for 400 N push: " + acceleration(largePush)
+
+if (acceleration(smallPush) == 0 m/s^2) {
+    print "The crate stays at rest under a 200 N push"
+}
+
+regime = if (largePush > maxStaticFriction) "sliding (kinetic)" else "at rest (static)"
+print "Regime under a 400 N push: " + regime

@@ -121,3 +121,39 @@ data class ConversionExpr(
         return exprVisitor.visitConversionExpr(this)
     }
 }
+
+/**
+ * Branch of an [IfExpr], either a single expression or a block.
+ */
+sealed interface IfBranch {
+
+    data class ExprBranch(val expr: Expr) : IfBranch
+
+    /**
+     * When the `if` is used as a value, the block value is its last expression.
+     */
+    data class BlockBranch(val block: BlockStmt) : IfBranch
+}
+
+/**
+ * Conditional branching on a physical relation, usable as statement or expression.
+ *
+ * Example: `a = if (v < 1 m/s) 2 N else { 3 N }`
+ *
+ * @property ifToken `if` token
+ * @property condition Physical relation to test
+ * @property thenBranch Branch executed when the condition holds
+ * @property elseBranch Optional else branch, an `else if` is an [IfBranch.ExprBranch] holding another [IfExpr]
+ * @property isExpression True when the value is used, so `else` is required and branches must have the same type
+ */
+data class IfExpr(
+    val ifToken: Token,
+    val condition: Condition,
+    val thenBranch: IfBranch,
+    val elseBranch: IfBranch?,
+    val isExpression: Boolean
+): Expr() {
+    override fun <R> accept(exprVisitor: ExprVisitor<R>): R {
+        return exprVisitor.visitIfExpr(this)
+    }
+}

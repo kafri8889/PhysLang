@@ -68,6 +68,25 @@ class MathASTPrinter : ExprVisitor<String> {
         TODO("Not yet implemented")
     }
 
+    override fun visitIfExpr(expr: IfExpr): String {
+        val condition = when (val condition = expr.condition) {
+            is Condition.Comparison -> {
+                val tolerance = condition.tolerance?.let { " within ${it.accept(this)}" } ?: ""
+                "${condition.left.accept(this)} ${condition.operatorToken.value} ${condition.right.accept(this)}$tolerance"
+            }
+            is Condition.Between -> "${condition.value.accept(this)} between ${condition.lower.accept(this)} and ${condition.upper.accept(this)}"
+            is Condition.DimensionCheck -> "${condition.value.accept(this)} is ${condition.target.accept(this)}"
+        }
+
+        fun branch(branch: IfBranch?): String = when (branch) {
+            is IfBranch.ExprBranch -> branch.expr.accept(this)
+            is IfBranch.BlockBranch -> "{...}"
+            null -> ""
+        }
+
+        return "(if ($condition) ${branch(expr.thenBranch)} ${branch(expr.elseBranch)})".replace(" )", ")")
+    }
+
     private fun parenthesize(
         operator: String,
         vararg exprs: Expr

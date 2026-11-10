@@ -14,4 +14,8 @@ val keywords = buildMap {
     put("print", TokenType.Print)
     put("unit", TokenType.Unit)
     put("null", TokenType.Null)
+    put("within", TokenType.Within)
+    put("between", TokenType.Between)
+    put("and", TokenType.And)
+    put("is", TokenType.Is)
 }

@@ -20,4 +20,6 @@ interface ExprVisitor<R> {
 
     fun visitConversionExpr(expr: ConversionExpr): R
 
+    fun visitIfExpr(expr: IfExpr): R
+
 }

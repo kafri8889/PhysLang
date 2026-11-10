@@ -1,0 +1,43 @@
+// Feature: physics-specific conditions
+//   a == b within tolerance  -> equal within a measurement tolerance
+//   x between low and high   -> inclusive physical range
+//   q is unit                -> q has the same dimensions as the unit expression
+
+measuredGravity = 9.79 m/s^2
+
+if (measuredGravity == 9.81 m/s^2 within 0.05 m/s^2) {
+    print "Measurement agrees with standard gravity"
+}
+
+if (measuredGravity != 9.81 m/s^2 within 0.001 m/s^2) {
+    print "But not within 1 mm/s^2"
+}
+
+temperature = 350 K
+
+if (temperature between 273.15 K and 373.15 K) {
+    print "Water is liquid at this temperature"
+}
+
+// 'is' checks dimensions, not values: kg*m/s^2 is the same dimension as N
+force = 12 kg * 3 m/s^2
+
+if (force is N) {
+    print "kg*m/s^2 has the dimensions of a force"
+}
+
+if (force is kg*m/s^2) {
+    print "Explicit unit expressions work too"
+}
+
+// Dimensional narrowing: only the branch selected by 'is' is checked,
+// so this formula works for lengths and masses
+form addOne(q) = if (q is m) q + 1 m else q + 1 kg
+print "Length + 1 m: " + addOne(2 m)
+print "Mass + 1 kg: " + addOne(3 kg)
+
+form describe(q) = if (q is N) "force" else if (q is J) "energy" else if (q is W) "power" else "other quantity"
+print "10 N -> " + describe(10 N)
+print "5 kJ -> " + describe(5 kJ)
+print "2 kW -> " + describe(2 kW)
+print "3 m -> " + describe(3 m)

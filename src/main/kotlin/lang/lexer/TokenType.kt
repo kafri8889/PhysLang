@@ -47,6 +47,10 @@ enum class TokenType {
     Equals,
     True,
     False,
+    Within,
+    Between,
+    And,
+    Is,
 
     Comment,
     Comma,
